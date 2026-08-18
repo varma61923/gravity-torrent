@@ -193,6 +193,23 @@ class SchedulerService {
       if (_disposed || !_enabled) return;
 
       if (shouldDownload) {
+        // Determine whether resuming is currently allowed at all. Checked
+        // up front (rather than clearing toResume afterwards) so that ids
+        // blocked by quota/Wi-Fi guard stay in _pausedByScheduler and get
+        // retried on a later tick instead of being forgotten forever.
+        bool resumeAllowed = true;
+        if (getIt.isRegistered<TorrentsModel>() &&
+            getIt<TorrentsModel>().isQuotaPauseEnforced) {
+          resumeAllowed = false;
+        }
+        if (resumeAllowed && WifiGuardService.instance.isEnabled) {
+          final connectivity = await Connectivity().checkConnectivity();
+          if (connectivity.contains(ConnectivityResult.mobile) ||
+              !connectivity.contains(ConnectivityResult.wifi)) {
+            resumeAllowed = false;
+          }
+        }
+
         // Resume torrents paused by the scheduler
         final toResume = <int>[];
         for (final id in List<int>.from(_pausedByScheduler)) {
@@ -202,24 +219,17 @@ class SchedulerService {
             _pausedByScheduler.remove(id);
             continue;
           }
-          if (t.status == TorrentStatus.stopped) {
-            toResume.add(id);
-            _pausedByScheduler.remove(id);
-          } else {
+          if (t.status != TorrentStatus.stopped) {
             // Already active; remove from scheduler-managed set.
             _pausedByScheduler.remove(id);
+            continue;
           }
-        }
-        if (getIt.isRegistered<TorrentsModel>() &&
-            getIt<TorrentsModel>().isQuotaPauseEnforced) {
-          toResume.clear();
-        }
-        if (WifiGuardService.instance.isEnabled) {
-          final connectivity = await Connectivity().checkConnectivity();
-          if (connectivity.contains(ConnectivityResult.mobile) ||
-              !connectivity.contains(ConnectivityResult.wifi)) {
-            toResume.clear();
+          if (resumeAllowed) {
+            toResume.add(id);
+            _pausedByScheduler.remove(id);
           }
+          // else: leave it tracked so a later tick retries the resume once
+          // quota/Wi-Fi guard allow it again.
         }
         if (toResume.isNotEmpty) {
           try {

@@ -399,6 +399,7 @@ class _GravityTorrentAppState extends State<GravityTorrentApp>
     with WidgetsBindingObserver, WindowListener {
   bool _unlocked = false;
   bool _wasLocked = false;
+  bool _hasEvaluatedLockState = false;
   Timer? _lockDebounceTimer;
 
   @override
@@ -441,15 +442,19 @@ class _GravityTorrentAppState extends State<GravityTorrentApp>
       _unlocked = false;
       _wasLocked = false;
     } else {
-      if (!_wasLocked) {
-        // Lock just became active for the first time this session
-        // (e.g. user just finished setting up their PIN). Grant the
-        // current session access so the user isn't immediately locked
-        // out right after enabling the feature.
+      if (!_wasLocked && _hasEvaluatedLockState) {
+        // Lock just became active during this running session (e.g. user
+        // just finished setting up their PIN). Grant the current session
+        // access so the user isn't immediately locked out right after
+        // enabling the feature. The `_hasEvaluatedLockState` guard excludes
+        // the very first evaluation (app cold start), so a lock that was
+        // already enabled from a previous session still requires
+        // authentication on launch.
         _unlocked = true;
       }
       _wasLocked = true;
     }
+    _hasEvaluatedLockState = true;
   }
 
   @override

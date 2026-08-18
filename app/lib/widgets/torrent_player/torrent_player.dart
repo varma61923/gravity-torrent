@@ -58,8 +58,48 @@ class StreamingPlayer extends Player {
 
   StreamingPlayer({required super.configuration, required this.server});
 
+  /// Pauses local playback directly, bypassing the cast redirect below. Used
+  /// internally (e.g. right after a cast session starts, or when following a
+  /// queue advance to a new file) so the same title never plays twice at
+  /// once, on the TV and locally.
+  Future<void> pauseLocalOnly() => super.pause();
+
+  // The stock media_kit controls (and this screen's own transport buttons)
+  // call play()/pause()/playOrPause()/seek() directly on this Player. While
+  // a cast session is active those must control the renderer instead of the
+  // local (already paused) player, or the user ends up with double playback
+  // and the local seek bar drifting out of sync with the TV.
+  @override
+  Future<void> play() {
+    if (CastingService.instance.isCasting) {
+      return CastingService.instance.resume().then((_) {});
+    }
+    return super.play();
+  }
+
+  @override
+  Future<void> pause() {
+    if (CastingService.instance.isCasting) {
+      return CastingService.instance.pause().then((_) {});
+    }
+    return super.pause();
+  }
+
+  @override
+  Future<void> playOrPause() {
+    final casting = CastingService.instance;
+    if (casting.isCasting) {
+      return (casting.isPaused ? casting.resume() : casting.pause())
+          .then((_) {});
+    }
+    return super.playOrPause();
+  }
+
   @override
   Future<void> seek(Duration duration) {
+    if (CastingService.instance.isCasting) {
+      return CastingService.instance.seek(duration).then((_) {});
+    }
     // Cancel previous request, which might block next seek command
     server.cancelRequest();
     return super.seek(duration);
@@ -92,6 +132,21 @@ class TorrentPlayerState extends State<TorrentPlayer> {
 
   /// Guard to prevent re-entrant calls to `_openQueueItem`.
   bool _isOpeningQueueItem = false;
+
+  /// Tracks the previous `CastingService.isCasting` value so
+  /// [_onCastingChanged] can detect when a session ends (stopped from the
+  /// cast sheet, failed to follow a queue advance, or ended for any other
+  /// reason) and resume local playback instead of leaving the user staring
+  /// at a frozen, paused frame.
+  bool _wasCasting = false;
+
+  void _onCastingChanged() {
+    final isCasting = CastingService.instance.isCasting;
+    if (_wasCasting && !isCasting && !_disposed) {
+      unawaited(player?.play());
+    }
+    _wasCasting = isCasting;
+  }
 
   void _closeVideoLoadingDialog() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -126,12 +181,14 @@ class TorrentPlayerState extends State<TorrentPlayer> {
     super.initState();
     _currentFile = widget.file;
     _currentFilePath = widget.filePath;
+    CastingService.instance.addListener(_onCastingChanged);
     initPlayer();
   }
 
   @override
   void dispose() {
     _disposed = true;
+    CastingService.instance.removeListener(_onCastingChanged);
     _loadingCompleter?.operation.cancel();
     unawaited(_disposePlayer());
     super.dispose();
@@ -321,6 +378,7 @@ class TorrentPlayerState extends State<TorrentPlayer> {
     _setupQueue();
     _enhancements?.openHandler = _openQueueItem;
     await _enhancements?.restoreResumePosition(_currentFilePath);
+    if (_disposed) return;
 
     final externalSubtitlesFiles = getExternalSubtitles(
       widget.file,
@@ -339,14 +397,18 @@ class TorrentPlayerState extends State<TorrentPlayer> {
 
     // Load external subtitles to be able to select them
     for (final sub in externalSubtitles) {
+      if (_disposed) return;
       await player!.setSubtitleTrack(
         SubtitleTrack.uri(sub.url, title: sub.name, language: sub.language),
       );
     }
+    if (_disposed) return;
 
     await player!.setSubtitleTrack(SubtitleTrack.no());
+    if (_disposed) return;
 
     await player!.play();
+    if (_disposed) return;
 
     // Register with the platform media session for background controls
     final audioHandler = MediaKitAudioHandler.instance;
@@ -577,6 +639,41 @@ class TorrentPlayerState extends State<TorrentPlayer> {
         return false;
       }
 
+      // A cast session was pointed at the old (now stopped) stream server,
+      // so it must either follow the queue advance to the new URL or be torn
+      // down cleanly - otherwise the renderer is left fetching a dead
+      // connection while the UI still shows "connected".
+      final casting = CastingService.instance;
+      if (casting.isCasting) {
+        final device = casting.selectedDevice;
+        var followed = false;
+        if (device != null) {
+          try {
+            followed = await casting.castStream(
+              device: device,
+              streamUrl: address,
+              title: target.name,
+            );
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('Failed to follow queue advance while casting: $e');
+            }
+          }
+        }
+        if (!mounted) {
+          unawaited(nextServer.stop().catchError((_) {}));
+          unawaited(widget.torrent.stopStreaming().catchError((_) {}));
+          return false;
+        }
+        if (followed) {
+          // Avoid playing the same title twice at once, on the TV and
+          // locally.
+          await activePlayer.pauseLocalOnly();
+        } else {
+          unawaited(casting.stopCasting());
+        }
+      }
+
       setState(() {});
       return true;
     } catch (e) {
@@ -773,7 +870,7 @@ class TorrentPlayerState extends State<TorrentPlayer> {
     // Avoid playing the same title twice at once, on the TV and locally.
     if (success) {
       if (!mounted) return;
-      await player?.pause();
+      await player?.pauseLocalOnly();
     }
     if (!mounted) return;
 

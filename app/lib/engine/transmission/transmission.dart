@@ -1103,6 +1103,7 @@ class TransmissionEngine extends Engine {
 
   @override
   Future<void> resetSettings() async {
+    if (_closed) throw StateError('Engine is closed');
     final pending = _activeSave;
     final completer = Completer<void>();
     _activeSave = completer.future;
