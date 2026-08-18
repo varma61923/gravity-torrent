@@ -261,6 +261,12 @@ class AnalyticsService {
           uploadedBytes: deltaUp,
         ),
       );
+      // `today` / getLastDays() / the trim step above all assume `_history`
+      // stays sorted oldest-first with today last. That only holds if `key`
+      // is >= every existing entry, which a backward clock change (DST
+      // correction, manual clock adjustment, crossing the date line) can
+      // violate, so re-sort after appending rather than assuming it.
+      _history.sort((a, b) => a.day.compareTo(b.day));
     }
 
     await _saveImpl();

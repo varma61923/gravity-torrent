@@ -49,7 +49,17 @@ class PlaylistQueueSheet extends StatelessWidget {
                       return Dismissible(
                         key: ValueKey(item),
                         direction: DismissDirection.endToStart,
-                        onDismissed: (_) => svc.removeFromQueue(i),
+                        onDismissed: (_) {
+                          // Re-resolve the position by identity rather than
+                          // trusting the build-time `i`: the queue can
+                          // change from outside this sheet (e.g. auto-
+                          // advance to the next item) while the dismiss
+                          // animation is in flight.
+                          final currentIndex = svc.queue.indexOf(item);
+                          if (currentIndex != -1) {
+                            svc.removeFromQueue(currentIndex);
+                          }
+                        },
                         background: Container(
                           color: Theme.of(context).colorScheme.errorContainer,
                           alignment: Alignment.centerRight,

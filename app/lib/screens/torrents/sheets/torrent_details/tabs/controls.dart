@@ -32,8 +32,20 @@ class _TorrentControlsTabState extends State<TorrentControlsTab> {
   @override
   void didUpdateWidget(covariant TorrentControlsTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.torrent != widget.torrent) {
-      _syncFromTorrent(widget.torrent);
+    final old = oldWidget.torrent;
+    final current = widget.torrent;
+    // Compare the fields this tab actually displays rather than object
+    // identity: TorrentsModel rebuilds a fresh Torrent instance on every
+    // ~5s poll, so an identity check would re-sync (and wipe an in-progress
+    // edit in the speed-limit text fields) on every single poll tick even
+    // when nothing relevant changed.
+    if (old.id != current.id ||
+        old.sequentialDownload != current.sequentialDownload ||
+        old.speedLimitDownEnabled != current.speedLimitDownEnabled ||
+        old.speedLimitUpEnabled != current.speedLimitUpEnabled ||
+        old.speedLimitDown != current.speedLimitDown ||
+        old.speedLimitUp != current.speedLimitUp) {
+      _syncFromTorrent(current);
     }
   }
 

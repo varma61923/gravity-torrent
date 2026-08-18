@@ -639,6 +639,40 @@ class TorrentPlayerState extends State<TorrentPlayer> {
         return false;
       }
 
+      // initPlayer() only loads external subtitles for the file it was
+      // opened with; opening new media resets the player's track selection,
+      // so without this the next queue item would silently lose its
+      // external subtitles (and the subtitles dialog would show nothing
+      // selected, since the engine falls back to its own 'auto' state).
+      final subsServerAddress = await subsServer?.getAddress();
+      if (subsServerAddress != null) {
+        final externalSubtitles = getExternalSubtitles(target, widget.torrent)
+            .map(
+              (f) => ExternalSubtitle(
+                name: truncateFromLastSlash(f.name),
+                url: Uri.encodeFull('$subsServerAddress/${f.name}'),
+                language: detectSubtitleLanguage(f.name),
+              ),
+            )
+            .toList();
+        for (final sub in externalSubtitles) {
+          if (!mounted) {
+            unawaited(nextServer.stop().catchError((_) {}));
+            unawaited(widget.torrent.stopStreaming().catchError((_) {}));
+            return false;
+          }
+          await activePlayer.setSubtitleTrack(
+            SubtitleTrack.uri(sub.url, title: sub.name, language: sub.language),
+          );
+        }
+        if (!mounted) {
+          unawaited(nextServer.stop().catchError((_) {}));
+          unawaited(widget.torrent.stopStreaming().catchError((_) {}));
+          return false;
+        }
+        await activePlayer.setSubtitleTrack(SubtitleTrack.no());
+      }
+
       // A cast session was pointed at the old (now stopped) stream server,
       // so it must either follow the queue advance to the new URL or be torn
       // down cleanly - otherwise the renderer is left fetching a dead

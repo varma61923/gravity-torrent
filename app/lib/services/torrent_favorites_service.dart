@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -16,8 +17,29 @@ class TorrentFavoritesService {
 
   final Set<int> _favorites = {};
   bool _loaded = false;
+  Future<void>? _lock;
 
-  Future<void> load() async {
+  /// Serializes loads/saves so overlapping calls (e.g. two rapid toggles)
+  /// can't complete their persistence writes out of order and silently
+  /// drop an earlier update.
+  Future<T> _withLock<T>(Future<T> Function() task) {
+    final previous = _lock;
+    final current = Future<T>(() async {
+      if (previous != null) await previous;
+      return task();
+    });
+    _lock = current;
+    unawaited(
+      current.whenComplete(() {
+        if (_lock == current) _lock = null;
+      }),
+    );
+    return current;
+  }
+
+  Future<void> load() => _withLock(_loadImpl);
+
+  Future<void> _loadImpl() async {
     if (_loaded) return;
     final raw = await SharedPrefsStorage.getString(_storageKey);
     if (raw != null && raw.isNotEmpty) {
@@ -59,8 +81,11 @@ class TorrentFavoritesService {
   Set<int> get favoriteIds => Set.unmodifiable(_favorites);
 
   /// Sets the favorite state for [torrentId].
-  Future<void> setFavorite(int torrentId, bool favorite) async {
-    await load();
+  Future<void> setFavorite(int torrentId, bool favorite) =>
+      _withLock(() => _setFavoriteImpl(torrentId, favorite));
+
+  Future<void> _setFavoriteImpl(int torrentId, bool favorite) async {
+    await _loadImpl();
     if (favorite) {
       _favorites.add(torrentId);
     } else {
@@ -70,8 +95,10 @@ class TorrentFavoritesService {
   }
 
   /// Toggles the favorite state for [torrentId].
-  Future<bool> toggle(int torrentId) async {
-    await load();
+  Future<bool> toggle(int torrentId) => _withLock(() => _toggleImpl(torrentId));
+
+  Future<bool> _toggleImpl(int torrentId) async {
+    await _loadImpl();
     final isFavorite = _favorites.contains(torrentId);
     if (isFavorite) {
       _favorites.remove(torrentId);
@@ -83,7 +110,9 @@ class TorrentFavoritesService {
   }
 
   /// Removes all favorites.
-  Future<void> clear() async {
+  Future<void> clear() => _withLock(_clearImpl);
+
+  Future<void> _clearImpl() async {
     _favorites.clear();
     await _save();
   }

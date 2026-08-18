@@ -43,22 +43,25 @@ class SecureStorage {
     if (_useSharedPrefs) return SharedPrefsStorage.getString(key);
 
     try {
-      return await _storage.read(key: key);
+      final value = await _storage.read(key: key);
+      if (value != null) return value;
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('SecureStorage.getString failed for $key: $e\n$st');
       }
-      // Attempt to clear invalidated hardware key entry
-      try {
-        await _storage.delete(key: key);
-      } catch (_) {}
+      // Deliberately not deleting the entry here: the read failure may be
+      // transient (e.g. Keystore not yet unlocked after a reboot), and
+      // deleting it would permanently destroy a legitimate value on what
+      // could be a one-off failure.
+    }
 
-      // Fallback read from SharedPreferences
-      try {
-        return await SharedPrefsStorage.getString(key);
-      } catch (_) {
-        return null;
-      }
+    // Fall back to a legacy plaintext value written by an older app version,
+    // if any (this class used to fall back to SharedPreferences on write
+    // failure; new writes never do that, see setString).
+    try {
+      return await SharedPrefsStorage.getString(key);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -70,23 +73,24 @@ class SecureStorage {
 
     try {
       await _storage.write(key: key, value: value);
+      return;
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('SecureStorage.setString failed for $key: $e\n$st');
       }
-      // Attempt cleanup and retry write
-      try {
-        await _storage.delete(key: key);
-        await _storage.write(key: key, value: value);
-        return;
-      } catch (_) {}
+    }
 
-      // Fallback write to SharedPreferences
-      try {
-        await SharedPrefsStorage.setString(key, value);
-      } catch (_) {
-        throw SecureStorageException('Unable to write to secure storage: $e');
-      }
+    // Retry once after clearing a possibly invalidated hardware key entry
+    // (e.g. an Android Keystore key invalidated by a biometric enrollment
+    // change).
+    try {
+      await _storage.delete(key: key);
+      await _storage.write(key: key, value: value);
+    } catch (e) {
+      // Never silently downgrade to plaintext SharedPreferences: callers
+      // rely on this throwing rather than sensitive data being written
+      // unencrypted.
+      throw SecureStorageException('Unable to write to secure storage: $e');
     }
   }
 
