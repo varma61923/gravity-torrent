@@ -443,11 +443,13 @@ class RssService {
 
       _seenLinks.add(link);
 
-      // Track episode if present
+      // Episode-history key, scoped per rule (or feed, for legacy
+      // keyword-based matches) so that two different shows airing the same
+      // season/episode number don't collide in a single global history set.
       final episodeInfo = RssEpisodeParser.parse(contextText);
-      if (episodeInfo != null) {
-        _episodeHistory.add(episodeInfo.key);
-      }
+      final historyKey = episodeInfo != null
+          ? _episodeHistoryKeyFor(matchingRule, feedUrl, episodeInfo)
+          : null;
 
       try {
         if (!await IpAddressScope.isPubliclyRoutableLink(link)) {
@@ -472,6 +474,13 @@ class RssService {
         // filename argument.
         await engine.addTorrent(link, null, null);
         if (kDebugMode) debugPrint('RssService: auto-added $link');
+
+        // Only record the episode as downloaded once it has actually been
+        // added; recording it earlier would permanently block retries for
+        // episodes that failed to add (e.g. quota exceeded).
+        if (historyKey != null) {
+          _episodeHistory.add(historyKey);
+        }
 
         // Update last match time for the matching rule
         if (matchingRule != null) {
@@ -544,12 +553,26 @@ class RssService {
     // Episode history check
     final episodeInfo = RssEpisodeParser.parse(contextText);
     if (episodeInfo != null) {
-      if (_episodeHistory.contains(episodeInfo.key)) {
+      final historyKey = _episodeHistoryKeyFor(rule, null, episodeInfo);
+      if (_episodeHistory.contains(historyKey)) {
         return false;
       }
     }
 
     return true;
+  }
+
+  /// Scopes an episode-history key by the matching rule (or feed URL as a
+  /// fallback for legacy keyword-based matches) so that identically numbered
+  /// episodes from different shows/feeds don't collide in the shared
+  /// history set.
+  String _episodeHistoryKeyFor(
+    RssRule? rule,
+    String? feedUrl,
+    EpisodeInfo episodeInfo,
+  ) {
+    final scope = rule?.name ?? feedUrl ?? '';
+    return '$scope::${episodeInfo.key}';
   }
 
   /// Extracts magnet links and .torrent URLs from the given [text] and from

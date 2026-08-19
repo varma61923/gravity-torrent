@@ -5,6 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gravity_torrent/engine/engine.dart';
 import 'package:gravity_torrent/engine/torrent.dart';
+import 'package:gravity_torrent/models/torrents.dart';
 import 'package:gravity_torrent/services/service_locator.dart';
 import 'package:gravity_torrent/storage/shared_preferences.dart';
 
@@ -241,6 +242,10 @@ class WifiGuardService {
     }
 
     final idsToResume = List<int>.from(_pausedByGuard);
+    if (getIt.isRegistered<TorrentsModel>() &&
+        getIt<TorrentsModel>().isQuotaPauseEnforced) {
+      return;
+    }
 
     try {
       final engine = getIt<Engine>();

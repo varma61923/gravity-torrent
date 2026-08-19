@@ -32,8 +32,20 @@ class _TorrentControlsTabState extends State<TorrentControlsTab> {
   @override
   void didUpdateWidget(covariant TorrentControlsTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.torrent != widget.torrent) {
-      _syncFromTorrent(widget.torrent);
+    final old = oldWidget.torrent;
+    final current = widget.torrent;
+    // Compare the fields this tab actually displays rather than object
+    // identity: TorrentsModel rebuilds a fresh Torrent instance on every
+    // ~5s poll, so an identity check would re-sync (and wipe an in-progress
+    // edit in the speed-limit text fields) on every single poll tick even
+    // when nothing relevant changed.
+    if (old.id != current.id ||
+        old.sequentialDownload != current.sequentialDownload ||
+        old.speedLimitDownEnabled != current.speedLimitDownEnabled ||
+        old.speedLimitUpEnabled != current.speedLimitUpEnabled ||
+        old.speedLimitDown != current.speedLimitDown ||
+        old.speedLimitUp != current.speedLimitUp) {
+      _syncFromTorrent(current);
     }
   }
 
@@ -149,12 +161,12 @@ class _TorrentControlsTabState extends State<TorrentControlsTab> {
     final l10n = AppLocalizations.of(context);
     setState(() => _saving = true);
     try {
+      final model = context.read<TorrentsModel>();
       if (torrent.status == TorrentStatus.stopped) {
-        await torrent.start();
+        await model.resumeSelected({torrent.id});
       } else {
-        await torrent.stop();
+        await model.pauseSelected({torrent.id});
       }
-      if (mounted) await context.read<TorrentsModel>().fetchTorrents();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

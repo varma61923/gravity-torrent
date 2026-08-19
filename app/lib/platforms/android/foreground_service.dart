@@ -41,8 +41,15 @@ Future<void> createForegroundService() async {
     return;
   }
 
-  await _startOrUpdateForegroundService('Running in the background...');
-  _foregroundServiceStarted = true;
+  final started = await _startOrUpdateForegroundService(
+    'Running in the background...',
+  );
+  _foregroundServiceStarted = started;
+  if (!started && kDebugMode) {
+    debugPrint(
+      'Android notifications plugin unavailable; foreground service not started.',
+    );
+  }
 }
 
 Future<void> stopForegroundService() async {
@@ -53,17 +60,25 @@ Future<void> stopForegroundService() async {
       ?.stopForegroundService();
 }
 
-Future<void> _startOrUpdateForegroundService(String body) async {
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.startForegroundService(
-        id: foregroundNotificationId,
-        title: 'Gravity Torrent',
-        body: body,
-        notificationDetails: androidNotificationDetails,
-        startType: AndroidServiceStartType.startRedeliverIntent,
-      );
+/// Starts (or updates) the foreground service notification.
+///
+/// Returns `false` (without throwing) when the Android notifications plugin
+/// hasn't resolved yet, so callers can tell "genuinely started" apart from
+/// "silently did nothing" instead of assuming success either way.
+Future<bool> _startOrUpdateForegroundService(String body) async {
+  final androidPlugin =
+      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+  if (androidPlugin == null) return false;
+
+  await androidPlugin.startForegroundService(
+    id: foregroundNotificationId,
+    title: 'Gravity Torrent',
+    body: body,
+    notificationDetails: androidNotificationDetails,
+    startType: AndroidServiceStartType.startRedeliverIntent,
+  );
+  return true;
 }
 
 /// Updates the foreground service notification with the current download

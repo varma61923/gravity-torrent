@@ -60,10 +60,8 @@ class InAppReviewService {
       if (now - lastMs < _cooldown.inMilliseconds) return;
 
       if (_isDesktopWithoutNativeSupport) {
-        // Windows / Linux have no native in-app review API.
-        // Redirect to store listing instead.
-        await _openStoreListing();
-        await SharedPrefs.setInt(_keyLastPromptMs, now);
+        // Windows / Linux have no native modal in-app review API.
+        // Do not automatically launch external browser/store windows without user interaction.
         return;
       }
 

@@ -155,8 +155,19 @@ class _RssScreenState extends State<RssScreen> {
                                 }
                               },
                               onDismissed: (_) {
+                                // `confirmDismiss` awaits an async removal
+                                // first, so `_feeds` (and therefore the
+                                // position of `feed` within it) may have
+                                // changed by the time this fires. Remove by
+                                // identity rather than the build-time
+                                // `index`, which could now point at a
+                                // different feed or be out of bounds.
                                 setState(() {
-                                  _feeds.removeAt(index);
+                                  _feeds.removeWhere(
+                                    (f) =>
+                                        f.url == feed.url &&
+                                        f.keyword == feed.keyword,
+                                  );
                                 });
                               },
                               child: SwitchListTile(

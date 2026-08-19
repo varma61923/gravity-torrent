@@ -11,8 +11,13 @@ class PinLockoutException implements Exception {
   PinLockoutException(this.remaining);
 
   @override
-  String toString() =>
-      'Too many failed attempts. Try again in ${remaining.inMinutes} minutes.';
+  String toString() {
+    if (remaining.inMinutes > 0) {
+      return 'Too many failed attempts. Try again in ${remaining.inMinutes} minute${remaining.inMinutes > 1 ? 's' : ''}.';
+    }
+    final secs = remaining.inSeconds.clamp(1, 60);
+    return 'Too many failed attempts. Try again in $secs second${secs > 1 ? 's' : ''}.';
+  }
 }
 
 /// Secure PIN storage and verification.

@@ -55,6 +55,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool canCheckForUpdate = false;
   bool showAdvancedSettings = false;
+  bool _appLockToggleBusy = false;
 
   @override
   void initState() {
@@ -576,19 +577,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleAppLockToggle(bool value, FeatureFlagsModel flags) async {
-    if (value) {
-      if (!AppLockService.instance.hasPin) {
-        await context.push('/privacy-vault');
-        if (!mounted || !AppLockService.instance.hasPin) return;
+    // The switch's `value` only reflects `flags.enableAppLock`, which does
+    // not change until this async handler finishes, so a rapid double-tap
+    // would otherwise re-enter this method and push '/privacy-vault' twice.
+    if (_appLockToggleBusy) return;
+    _appLockToggleBusy = true;
+    try {
+      if (value) {
+        if (!AppLockService.instance.hasPin) {
+          await context.push('/privacy-vault');
+          if (!mounted || !AppLockService.instance.hasPin) return;
+        }
+        await flags.setEnableAppLock(true);
+      } else {
+        if (AppLockService.instance.hasPin) {
+          final authenticated =
+              await context.push<bool>('/privacy-vault') ?? false;
+          if (!mounted || !authenticated) return;
+        }
+        await flags.setEnableAppLock(false);
       }
-      await flags.setEnableAppLock(true);
-    } else {
-      if (AppLockService.instance.hasPin) {
-        final authenticated =
-            await context.push<bool>('/privacy-vault') ?? false;
-        if (!mounted || !authenticated) return;
-      }
-      await flags.setEnableAppLock(false);
+    } finally {
+      _appLockToggleBusy = false;
     }
   }
 

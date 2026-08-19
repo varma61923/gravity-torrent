@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:async/async.dart';
 
@@ -510,19 +511,28 @@ class StreamingServer {
   Future<void> _enablePreviewMode() async {
     if (torrent.pieceCount <= 0) return;
 
+    final filePieceCount = (torrentFile.endPiece - torrentFile.beginPiece + 1)
+        .clamp(0, torrent.pieceCount);
+    if (filePieceCount <= 0) return;
+
+    final headCount = min(3, filePieceCount);
+    final tailCount = min(3, filePieceCount);
+
     // Prioritize first few pieces (for video headers)
     final firstPieces = List.generate(
-      3.clamp(0, torrent.pieceCount),
+      headCount,
       (i) => torrentFile.beginPiece + i,
     );
 
     // Prioritize last few pieces (for video metadata/index)
     final lastPieces = List.generate(
-      3.clamp(0, torrent.pieceCount),
+      tailCount,
       (i) => torrentFile.endPiece - i,
     ).reversed.toList();
 
-    final priorityPieces = {...firstPieces, ...lastPieces}.toList();
+    final priorityPieces = {...firstPieces, ...lastPieces}
+        .where((p) => p >= 0 && p < torrent.pieceCount)
+        .toList();
     priorityPieces.sort();
 
     if (kDebugMode) {

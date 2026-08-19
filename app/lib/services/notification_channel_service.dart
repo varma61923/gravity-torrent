@@ -200,6 +200,35 @@ class NotificationChannelService {
     );
   }
 
+  static Future<void> showDataUsage({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    if (_disposed || !dataUsageEnabled) return;
+
+    await _plugin.show(
+      id: id + 300000,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'data_usage',
+          'Data Usage Alerts',
+          channelDescription: 'Alerts when data usage approaches limits',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: 'data_usage:$id',
+    );
+  }
+
   static Future<void> cancelAll() async {
     if (_disposed) return;
     await _plugin.cancelAll();
@@ -280,6 +309,12 @@ Future<void> showLocalNotification({
       );
       break;
     case 'data_usage':
+      await NotificationChannelService.showDataUsage(
+        id: id,
+        title: title,
+        body: body,
+      );
+      break;
     case 'completion':
     default:
       await NotificationChannelService.showCompletion(

@@ -415,6 +415,11 @@ jobs:
   ios:
     needs: quality
     runs-on: macos-15
+    # Unsigned iOS builds are best-effort: this project has no paid Apple
+    # developer certs in CI, so a failure here should not mark the whole
+    # workflow red when every other platform (and the release job, which
+    # deliberately excludes `ios` from its `needs`) succeeded.
+    continue-on-error: true
     env:
       # Do not target simulator
       TARGET_IOS_DEVICE: true

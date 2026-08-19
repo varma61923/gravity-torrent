@@ -22,11 +22,17 @@ class _SubtitlesSelectorDialogState extends State<SubtitlesSelectorDialog> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    // The option list below deliberately omits the 'auto' track (there is no
+    // "Auto" tile), so if the player is currently in that state - the
+    // engine's own default before anything is explicitly selected - map it
+    // to 'no' instead of leaving no tile checked at all.
+    final effectiveValue =
+        widget.currentValue == 'auto' ? 'no' : widget.currentValue;
     return AlertDialog(
       title: Text(l.subtitles),
       content: SingleChildScrollView(
         child: RadioGroup<String>(
-          groupValue: widget.currentValue,
+          groupValue: effectiveValue,
           onChanged: (id) {
             if (id == null) return;
             final s = widget.subtitles.firstWhere((s) => s.id == id);

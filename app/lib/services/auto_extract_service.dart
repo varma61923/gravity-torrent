@@ -91,13 +91,18 @@ class AutoExtractService extends ChangeNotifier {
             lowerPath.endsWith('.tar') ||
             lowerPath.endsWith('.gz') ||
             lowerPath.endsWith('.bz2')) {
-          if (lowerPath.endsWith('.gz') && !lowerPath.endsWith('.tar.gz')) {
-            // Single gzipped file - handled via streaming
+          if ((lowerPath.endsWith('.gz') && !lowerPath.endsWith('.tar.gz')) ||
+              (lowerPath.endsWith('.bz2') && !lowerPath.endsWith('.tar.bz2'))) {
+            // Single gzipped/bzip2ed file - handled via streaming.
+            // extractFileToDisk only understands tar/zip containers, so a
+            // standalone (non-tar) .gz or .bz2 file must be decompressed
+            // directly instead.
+            final isGzip = lowerPath.endsWith('.gz');
             final originalFileName = p.basename(filePath);
             final outPath = p.join(
               targetFolder.path,
               originalFileName.replaceFirst(
-                RegExp(r'\.gz$', caseSensitive: false),
+                RegExp(isGzip ? r'\.gz$' : r'\.bz2$', caseSensitive: false),
                 '',
               ),
             );
@@ -106,7 +111,14 @@ class AutoExtractService extends ChangeNotifier {
                 final inputStream = InputFileStream(filePath);
                 final outputStream = OutputFileStream(outPath);
                 try {
-                  const GZipDecoder().decodeStream(inputStream, outputStream);
+                  if (isGzip) {
+                    const GZipDecoder().decodeStream(
+                      inputStream,
+                      outputStream,
+                    );
+                  } else {
+                    BZip2Decoder().decodeStream(inputStream, outputStream);
+                  }
                 } finally {
                   await outputStream.close();
                   await inputStream.close();
@@ -114,7 +126,7 @@ class AutoExtractService extends ChangeNotifier {
               });
               final outFile = File(outPath);
               if (!outFile.existsSync() || outFile.lengthSync() == 0) {
-                throw StateError('GZip decompression produced no output');
+                throw StateError('Decompression produced no output');
               }
             } catch (e) {
               try {

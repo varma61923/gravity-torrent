@@ -83,10 +83,12 @@ class TorrentListTile extends StatelessWidget {
                         child: IconButton(
                           onPressed: () async {
                             try {
-                              torrent.status == TorrentStatus.stopped
-                                  ? await torrent.start()
-                                  : await torrent.stop();
-                              await torrentsModel.fetchTorrents();
+                              if (torrent.status == TorrentStatus.stopped) {
+                                await torrentsModel
+                                    .resumeSelected({torrent.id});
+                              } else {
+                                await torrentsModel.pauseSelected({torrent.id});
+                              }
                             } catch (e) {
                               if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
