@@ -125,10 +125,11 @@ class SubtitlesServer {
   }
 
   Future<void> serveFile(HttpResponse response, String filePath) async {
-    final root = Directory(torrent.location).resolveSymbolicLinksSync();
-    final resolved = File(p.normalize(p.join(root, filePath)));
+    final String root;
     final String realPath;
     try {
+      root = Directory(torrent.location).resolveSymbolicLinksSync();
+      final resolved = File(p.normalize(p.join(root, filePath)));
       realPath = resolved.resolveSymbolicLinksSync();
     } on FileSystemException {
       response.statusCode = HttpStatus.notFound;

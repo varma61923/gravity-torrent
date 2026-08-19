@@ -210,11 +210,16 @@ class TorrentCreatorService {
       'creation date': DateTime.now().millisecondsSinceEpoch ~/ 1000,
     };
 
-    if (trackers.isNotEmpty) {
-      torrent['announce'] = trackers.first.first;
-      if (trackers.length > 1 ||
-          (trackers.length == 1 && trackers.first.length > 1)) {
-        torrent['announce-list'] = trackers;
+    final validTrackers = trackers
+        .map((tier) => tier.where((t) => t.trim().isNotEmpty).toList())
+        .where((tier) => tier.isNotEmpty)
+        .toList();
+
+    if (validTrackers.isNotEmpty) {
+      torrent['announce'] = validTrackers.first.first;
+      if (validTrackers.length > 1 ||
+          (validTrackers.length == 1 && validTrackers.first.length > 1)) {
+        torrent['announce-list'] = validTrackers;
       }
     }
 

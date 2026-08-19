@@ -2,9 +2,13 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gravity_torrent/services/blocklist_service.dart';
+import 'package:gravity_torrent/services/pin_service.dart';
 import 'package:gravity_torrent/services/remote_control_service.dart';
+import 'package:gravity_torrent/services/rss_episode_parser.dart';
 import 'package:gravity_torrent/services/rss_service.dart';
 import 'package:gravity_torrent/services/scheduler_service.dart';
+import 'package:gravity_torrent/services/torrent_creator_service.dart';
+import 'package:gravity_torrent/utils/ip_address.dart';
 import 'package:gravity_torrent/utils/media_queue.dart';
 import 'package:gravity_torrent/utils/secure_token.dart';
 import 'package:gravity_torrent/utils/subtitles.dart';
@@ -116,6 +120,63 @@ void main() {
       expect(window.isActiveAt(DateTime(2024, 1, 1, 8, 0)), isFalse);
       // Monday 23:30 is inside (Monday night).
       expect(window.isActiveAt(DateTime(2024, 1, 1, 23, 30)), isTrue);
+    });
+
+    test('PinLockoutException formats seconds correctly when under 1 minute', () {
+      final excSeconds = PinLockoutException(const Duration(seconds: 45));
+      expect(excSeconds.toString(), 'Too many failed attempts. Try again in 45 seconds.');
+
+      final excMinutes = PinLockoutException(const Duration(minutes: 5));
+      expect(excMinutes.toString(), 'Too many failed attempts. Try again in 5 minutes.');
+    });
+
+    test('RssEpisodeParser handles range like S01E01-E10 and 1x1-10 correctly', () {
+      final episodes = RssEpisodeParser.parseEpisodeFilter('S01E01-E03;S02E05-E07');
+      expect(episodes, ['S01E01', 'S01E02', 'S01E03', 'S02E05', 'S02E06', 'S02E07']);
+
+      final match1 = RssEpisodeParser.matchesFilter(
+        'Show.Name.S01E05.1080p',
+        'S01E01-E10',
+      );
+      expect(match1, isTrue);
+
+      final match2 = RssEpisodeParser.matchesFilter(
+        'Show.Name.S01E15.1080p',
+        'S01E01-E10',
+      );
+      expect(match2, isFalse);
+    });
+
+    test('TorrentCreatorService handles empty tracker tiers gracefully', () async {
+      final tempDir = Directory.systemTemp.createTempSync('torrent_test_');
+      try {
+        final sampleFile = File('${tempDir.path}/test.bin');
+        sampleFile.writeAsBytesSync(List.filled(1024, 0));
+
+        final outPath = await TorrentCreatorService.create(
+          inputPath: sampleFile.path,
+          outputDirectory: tempDir.path,
+          trackers: [
+            [''],
+            [],
+          ],
+        );
+        expect(File(outPath).existsSync(), isTrue);
+      } finally {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    test('isPubliclyRoutableHost defers to fetch time on DNS timeout', () async {
+      final isRoutable = await IpAddressScope.isPubliclyRoutableHost(
+        'slow-dns.example.com',
+        lookup: (_) => Future.delayed(
+          const Duration(milliseconds: 200),
+          () => throw const SocketException('offline'),
+        ),
+        timeout: const Duration(milliseconds: 10),
+      );
+      expect(isRoutable, isTrue);
     });
   });
 }

@@ -88,7 +88,9 @@ class IpAddressScope {
       if (addresses.isEmpty) return true;
       return addresses.every(isPubliclyRoutable);
     } on TimeoutException {
-      return false;
+      // Offline, slow, or sandboxed DNS. Defer to fetch time rather than blocking a
+      // legitimate URL when DNS is unavailable.
+      return true;
     } on SocketException {
       // Offline or unresolvable. Defer to fetch time rather than blocking a
       // legitimate URL when DNS is unavailable.

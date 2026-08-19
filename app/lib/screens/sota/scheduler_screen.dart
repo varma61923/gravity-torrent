@@ -210,11 +210,11 @@ class _SchedulerScreenState extends State<SchedulerScreen> {
                       const SizedBox(height: 8),
                       Chip(
                         avatar: Icon(
-                          Icons.warning_amber_rounded,
-                          color: colorScheme.error,
+                          Icons.info_outline,
+                          color: colorScheme.primary,
                         ),
                         label: const Text(
-                          'Start and end time are the same — no downloads will run',
+                          'Start and end time are the same — downloads will run all day',
                         ),
                       ),
                     ] else if ((_startHour * 60 + _startMinute) >=

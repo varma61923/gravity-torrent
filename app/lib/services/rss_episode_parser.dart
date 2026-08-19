@@ -111,7 +111,7 @@ class RssEpisodeParser {
   static bool _matchesRange(EpisodeInfo info, String range) {
     // Parse range like "1x1-10" or "S01E01-E10"
     final seasonEpMatch = RegExp(
-      r'[sS]?(\d{1,2})[xXeE](\d{1,2})-?(\d{1,2})?',
+      r'[sS]?(\d{1,2})[xXeE](\d{1,2})(?:-[sS]?[eE]?(\d{1,2}))?',
     ).firstMatch(range);
     if (seasonEpMatch != null) {
       final rangeSeason = int.tryParse(seasonEpMatch.group(1)!);
@@ -136,7 +136,7 @@ class RssEpisodeParser {
     final ranges = filter.split(';').where((r) => r.isNotEmpty);
     for (final range in ranges) {
       final seasonEpMatch = RegExp(
-        r'[sS]?(\d{1,2})[xXeE](\d{1,2})-?(\d{1,2})?',
+        r'[sS]?(\d{1,2})[xXeE](\d{1,2})(?:-[sS]?[eE]?(\d{1,2}))?',
       ).firstMatch(range);
       if (seasonEpMatch != null) {
         final season = int.tryParse(seasonEpMatch.group(1)!);

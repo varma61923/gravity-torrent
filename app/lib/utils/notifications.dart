@@ -225,18 +225,29 @@ Future<void> executeNotificationAction(String actionId, Engine engine) async {
     final torrents = await engine.fetchTorrents();
     switch (actionId) {
       case 'pause_all':
-        for (final torrent in torrents) {
-          if (torrent.status == TorrentStatus.downloading ||
-              torrent.status == TorrentStatus.seeding) {
-            await engine.pauseTorrent(torrent.id);
-          }
+        final activeIds = torrents
+            .where(
+              (t) =>
+                  t.status == TorrentStatus.downloading ||
+                  t.status == TorrentStatus.seeding ||
+                  t.status == TorrentStatus.queuedToDownload ||
+                  t.status == TorrentStatus.queuedToSeed ||
+                  t.status == TorrentStatus.queuedToCheck ||
+                  t.status == TorrentStatus.checking,
+            )
+            .map((t) => t.id)
+            .toList();
+        if (activeIds.isNotEmpty) {
+          await engine.pauseTorrents(activeIds);
         }
         break;
       case 'resume_all':
-        for (final torrent in torrents) {
-          if (torrent.status == TorrentStatus.stopped) {
-            await engine.resumeTorrent(torrent.id);
-          }
+        final stoppedIds = torrents
+            .where((t) => t.status == TorrentStatus.stopped)
+            .map((t) => t.id)
+            .toList();
+        if (stoppedIds.isNotEmpty) {
+          await engine.resumeTorrents(stoppedIds);
         }
         break;
       default:

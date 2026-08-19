@@ -161,12 +161,12 @@ class _TorrentControlsTabState extends State<TorrentControlsTab> {
     final l10n = AppLocalizations.of(context);
     setState(() => _saving = true);
     try {
+      final model = context.read<TorrentsModel>();
       if (torrent.status == TorrentStatus.stopped) {
-        await torrent.start();
+        await model.resumeSelected({torrent.id});
       } else {
-        await torrent.stop();
+        await model.pauseSelected({torrent.id});
       }
-      if (mounted) await context.read<TorrentsModel>().fetchTorrents();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -295,6 +295,13 @@ class SchedulerService {
           getIt<TorrentsModel>().isQuotaPauseEnforced) {
         toResume.clear();
       }
+      if (toResume.isNotEmpty && WifiGuardService.instance.isEnabled) {
+        final connectivity = await Connectivity().checkConnectivity();
+        if (connectivity.contains(ConnectivityResult.mobile) ||
+            !connectivity.contains(ConnectivityResult.wifi)) {
+          toResume.clear();
+        }
+      }
       if (toResume.isNotEmpty) {
         try {
           await engine.resumeTorrents(toResume);

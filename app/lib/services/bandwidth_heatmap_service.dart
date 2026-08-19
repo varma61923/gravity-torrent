@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:gravity_torrent/engine/engine.dart';
 import 'package:gravity_torrent/engine/session.dart';
 import 'package:gravity_torrent/engine/torrent.dart';
+import 'package:gravity_torrent/models/torrents.dart';
 import 'package:gravity_torrent/services/service_locator.dart';
 import 'package:gravity_torrent/storage/shared_preferences.dart';
 
@@ -140,10 +141,13 @@ class BandwidthHeatmapService extends ChangeNotifier {
           await engine.pauseTorrents(activeIds);
           _pausedByHeatmap.addAll(activeIds);
         }
-      } else {
         // Resume any torrents previously paused by the heatmap.
         if (_pausedByHeatmap.isNotEmpty) {
-          await engine.resumeTorrents(_pausedByHeatmap.toList());
+          final isQuotaEnforced = getIt.isRegistered<TorrentsModel>() &&
+              getIt<TorrentsModel>().isQuotaPauseEnforced;
+          if (!isQuotaEnforced) {
+            await engine.resumeTorrents(_pausedByHeatmap.toList());
+          }
           _pausedByHeatmap.clear();
         }
 
