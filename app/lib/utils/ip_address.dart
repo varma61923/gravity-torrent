@@ -88,9 +88,13 @@ class IpAddressScope {
       if (addresses.isEmpty) return true;
       return addresses.every(isPubliclyRoutable);
     } on TimeoutException {
-      // Offline, slow, or sandboxed DNS. Defer to fetch time rather than blocking a
-      // legitimate URL when DNS is unavailable.
-      return true;
+      // This is the only SSRF gate before a link is handed to the torrent
+      // engine (no further address-scope validation happens downstream), so
+      // a timeout must fail closed: an attacker-controlled DNS server could
+      // otherwise deliberately stall past the timeout here to slip past this
+      // check, then resolve to a private/internal address for the real
+      // connection moments later when the engine itself looks it up.
+      return false;
     } on SocketException {
       // Offline or unresolvable. Defer to fetch time rather than blocking a
       // legitimate URL when DNS is unavailable.

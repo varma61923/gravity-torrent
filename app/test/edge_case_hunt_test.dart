@@ -180,8 +180,11 @@ void main() {
       }
     });
 
-    test('isPubliclyRoutableHost defers to fetch time on DNS timeout',
-        () async {
+    test('isPubliclyRoutableHost fails closed on DNS timeout', () async {
+      // This is the only SSRF gate before a link reaches the torrent engine,
+      // so a DNS timeout (which an attacker's own resolver could induce
+      // deliberately, then resolve to a private address moments later for
+      // the real connection) must reject rather than allow the link.
       final isRoutable = await IpAddressScope.isPubliclyRoutableHost(
         'slow-dns.example.com',
         lookup: (_) => Future.delayed(
@@ -190,7 +193,7 @@ void main() {
         ),
         timeout: const Duration(milliseconds: 10),
       );
-      expect(isRoutable, isTrue);
+      expect(isRoutable, isFalse);
     });
   });
 }
