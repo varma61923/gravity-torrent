@@ -84,7 +84,8 @@ class TorrentListTile extends StatelessWidget {
                           onPressed: () async {
                             try {
                               if (torrent.status == TorrentStatus.stopped) {
-                                await torrentsModel.resumeSelected({torrent.id});
+                                await torrentsModel
+                                    .resumeSelected({torrent.id});
                               } else {
                                 await torrentsModel.pauseSelected({torrent.id});
                               }

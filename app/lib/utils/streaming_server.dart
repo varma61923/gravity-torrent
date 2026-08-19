@@ -511,8 +511,8 @@ class StreamingServer {
   Future<void> _enablePreviewMode() async {
     if (torrent.pieceCount <= 0) return;
 
-    final filePieceCount =
-        (torrentFile.endPiece - torrentFile.beginPiece + 1).clamp(0, torrent.pieceCount);
+    final filePieceCount = (torrentFile.endPiece - torrentFile.beginPiece + 1)
+        .clamp(0, torrent.pieceCount);
     if (filePieceCount <= 0) return;
 
     final headCount = min(3, filePieceCount);

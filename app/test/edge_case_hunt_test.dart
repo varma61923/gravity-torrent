@@ -122,17 +122,29 @@ void main() {
       expect(window.isActiveAt(DateTime(2024, 1, 1, 23, 30)), isTrue);
     });
 
-    test('PinLockoutException formats seconds correctly when under 1 minute', () {
+    test('PinLockoutException formats seconds correctly when under 1 minute',
+        () {
       final excSeconds = PinLockoutException(const Duration(seconds: 45));
-      expect(excSeconds.toString(), 'Too many failed attempts. Try again in 45 seconds.');
+      expect(
+        excSeconds.toString(),
+        'Too many failed attempts. Try again in 45 seconds.',
+      );
 
       final excMinutes = PinLockoutException(const Duration(minutes: 5));
-      expect(excMinutes.toString(), 'Too many failed attempts. Try again in 5 minutes.');
+      expect(
+        excMinutes.toString(),
+        'Too many failed attempts. Try again in 5 minutes.',
+      );
     });
 
-    test('RssEpisodeParser handles range like S01E01-E10 and 1x1-10 correctly', () {
-      final episodes = RssEpisodeParser.parseEpisodeFilter('S01E01-E03;S02E05-E07');
-      expect(episodes, ['S01E01', 'S01E02', 'S01E03', 'S02E05', 'S02E06', 'S02E07']);
+    test('RssEpisodeParser handles range like S01E01-E10 and 1x1-10 correctly',
+        () {
+      final episodes =
+          RssEpisodeParser.parseEpisodeFilter('S01E01-E03;S02E05-E07');
+      expect(
+        episodes,
+        ['S01E01', 'S01E02', 'S01E03', 'S02E05', 'S02E06', 'S02E07'],
+      );
 
       final match1 = RssEpisodeParser.matchesFilter(
         'Show.Name.S01E05.1080p',
@@ -147,7 +159,8 @@ void main() {
       expect(match2, isFalse);
     });
 
-    test('TorrentCreatorService handles empty tracker tiers gracefully', () async {
+    test('TorrentCreatorService handles empty tracker tiers gracefully',
+        () async {
       final tempDir = Directory.systemTemp.createTempSync('torrent_test_');
       try {
         final sampleFile = File('${tempDir.path}/test.bin');
@@ -167,7 +180,8 @@ void main() {
       }
     });
 
-    test('isPubliclyRoutableHost defers to fetch time on DNS timeout', () async {
+    test('isPubliclyRoutableHost defers to fetch time on DNS timeout',
+        () async {
       final isRoutable = await IpAddressScope.isPubliclyRoutableHost(
         'slow-dns.example.com',
         lookup: (_) => Future.delayed(
