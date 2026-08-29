@@ -230,17 +230,13 @@ class AnalyticsService {
     final now = DateTime.now();
     final key = DateTime(now.year, now.month, now.day);
 
-    // Keep only the last [_maxDays] days
-    final excess = _history.length - _maxDays;
-    bool trimmed = false;
-    if (excess > 0) {
-      _history.removeRange(0, excess);
-      trimmed = true;
-    }
-
-    // Skip writing if both deltas are zero to avoid spurious entries.
+    // Skip writing if both deltas are zero to avoid spurious entries,
+    // but still ensure trimming if we are over capacity.
     if (deltaDown == 0 && deltaUp == 0) {
-      if (trimmed) await _saveImpl();
+      if (_history.length > _maxDays) {
+        _history.removeRange(0, _history.length - _maxDays);
+        await _saveImpl();
+      }
       return;
     }
 
@@ -267,6 +263,11 @@ class AnalyticsService {
       // correction, manual clock adjustment, crossing the date line) can
       // violate, so re-sort after appending rather than assuming it.
       _history.sort((a, b) => a.day.compareTo(b.day));
+    }
+
+    // Trim after insert/merge to guarantee bound.
+    if (_history.length > _maxDays) {
+      _history.removeRange(0, _history.length - _maxDays);
     }
 
     await _saveImpl();
@@ -346,7 +347,11 @@ class AnalyticsService {
   Future<T> _withLock<T>(Future<T> Function() task) {
     final previous = _lock;
     final current = Future<T>(() async {
-      if (previous != null) await previous;
+      if (previous != null) {
+        try {
+          await previous;
+        } catch (_) {}
+      }
       return task();
     });
     _lock = current;

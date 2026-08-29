@@ -226,7 +226,6 @@ class SchedulerService {
           }
           if (resumeAllowed) {
             toResume.add(id);
-            _pausedByScheduler.remove(id);
           }
           // else: leave it tracked so a later tick retries the resume once
           // quota/Wi-Fi guard allow it again.
@@ -234,10 +233,14 @@ class SchedulerService {
         if (toResume.isNotEmpty) {
           try {
             await engine.resumeTorrents(toResume);
+            for (final id in toResume) {
+              _pausedByScheduler.remove(id);
+            }
           } catch (e) {
             if (kDebugMode) {
               debugPrint('SchedulerService failed to resume torrents: $e');
             }
+            // Keep ids in _pausedByScheduler for retry on next tick.
           }
         }
       } else {

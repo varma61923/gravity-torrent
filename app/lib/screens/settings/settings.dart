@@ -262,14 +262,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _handleBlocklistToggle(bool value) =>
       _updateSession(SessionBase(blocklistEnabled: value));
 
-  void _handleBlocklistUrlSave(String url) {
+  Future<void> _handleBlocklistUrlSave(String url) async {
     final trimmed = url.trim();
     if (trimmed.isNotEmpty) {
       final uri = Uri.tryParse(trimmed);
-      final isValid = uri != null &&
-          (uri.scheme == 'http' || uri.scheme == 'https') &&
-          uri.host.isNotEmpty;
-      if (!isValid) {
+      if (uri == null ||
+          (uri.scheme != 'http' && uri.scheme != 'https') ||
+          uri.host.isEmpty ||
+          uri.userInfo.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context).validUrlRequired),
+            ),
+          );
+        }
+        return;
+      }
+      // Validate against SSRF (private host) using the same gate as
+      // BlocklistService. Async, so this handler is now async.
+      final isRoutable = await BlocklistService.isValidBlocklistUrl(trimmed);
+      if (!isRoutable) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

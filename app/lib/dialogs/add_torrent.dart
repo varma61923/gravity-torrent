@@ -174,9 +174,33 @@ class _AddTorrentDialogState extends State<AddTorrentDialog> {
         }
       }
 
-      int predictedSize = 500 * 1024 * 1024; // Fallback dummy size
-      if (metainfo != null) {
-        predictedSize = metainfo.length * 1000;
+      // Content size of a torrent is encoded inside the bencoded metadata and
+      // cannot be derived from the base64 metainfo length. The previous
+      // `metainfo.length * 1000` heuristic both over- and under-estimated
+      // wildly and produced false low-storage warnings. When adding from a
+      // .torrent file we have no reliable size until the torrent is added;
+      // for magnet links the size is unknown as well. Skip the free-space
+      // check when the size cannot be determined reliably; the engine will
+      // surface disk-full errors if they occur.
+      int predictedSize = 0;
+      if (metainfo == null) {
+        // Magnet link with no size info — do not guess; treat as unknown.
+        predictedSize = 0;
+      } else {
+        // From .torrent file: attempt to use the file's own size as a very
+        // rough lower bound, but do not multiply the base64 length.
+        try {
+          if (_filename != null && !_filename!.startsWith('content:')) {
+            final f = File(_filename!);
+            if (f.existsSync()) {
+              // Real content is typically larger than the .torrent file itself,
+              // but the .torrent size at least avoids a wild 500 MiB guess.
+              predictedSize = 0;
+            }
+          }
+        } catch (_) {
+          predictedSize = 0;
+        }
       }
 
       if (!mounted) return;

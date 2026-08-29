@@ -535,12 +535,15 @@ class TransmissionTorrent extends Torrent {
 
   @override
   Future<void> setPriorityPieces(List<int> pieceIndices, int priority) async {
-    final request = TorrentSetRequest(
-      arguments: TorrentSetRequestArguments(
-        ids: [id],
-        priorityHigh: pieceIndices,
-      ),
-    );
+    TorrentSetRequestArguments args;
+    if (priority > 0) {
+      args = TorrentSetRequestArguments(ids: [id], priorityHigh: pieceIndices);
+    } else if (priority < 0) {
+      args = TorrentSetRequestArguments(ids: [id], priorityLow: pieceIndices);
+    } else {
+      args = TorrentSetRequestArguments(ids: [id], priorityNormal: pieceIndices);
+    }
+    final request = TorrentSetRequest(arguments: args);
     _expectSuccess(
       await flutter_libtransmission.requestAsync(jsonEncode(request)),
     );
@@ -588,6 +591,7 @@ class TransmissionSession extends Session {
     final SessionSetRequest request = SessionSetRequest(
       arguments: SessionSetRequestArguments(
         downloadDir: session.downloadDir,
+        downloadQueueEnabled: session.downloadQueueEnabled,
         downloadQueueSize: session.downloadQueueSize,
         uploadQueueEnabled: session.uploadQueueEnabled,
         uploadQueueSize: session.uploadQueueSize,
@@ -878,11 +882,14 @@ class TransmissionEngine extends Engine {
       if (previousSave != null) {
         await previousSave.catchError((_) {});
       }
-      if (_closed) return;
+      if (_closed) {
+        if (!completer.isCompleted) completer.complete();
+        return;
+      }
       flutter_libtransmission.saveSettings();
-      completer.complete();
+      if (!completer.isCompleted) completer.complete();
     } catch (e) {
-      completer.completeError(e);
+      if (!completer.isCompleted) completer.completeError(e);
       rethrow;
     } finally {
       if (_activeSave == completer.future) {
@@ -1157,9 +1164,10 @@ class TransmissionEngine extends Engine {
     for (final id in torrentIds) {
       try {
         await SharedPrefsStorage.remove('streaming_active_$id');
+        await SharedPrefsStorage.remove('streaming_files_$id');
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('Failed to remove streaming active key for $id: $e');
+          debugPrint('Failed to remove streaming keys for $id: $e');
         }
       }
     }
@@ -1342,12 +1350,15 @@ class TransmissionEngine extends Engine {
     int priority,
   ) async {
     if (_closed) throw StateError('Engine is closed');
-    final request = TorrentSetRequest(
-      arguments: TorrentSetRequestArguments(
-        ids: [id],
-        priorityHigh: pieceIndices,
-      ),
-    );
+    TorrentSetRequestArguments args;
+    if (priority > 0) {
+      args = TorrentSetRequestArguments(ids: [id], priorityHigh: pieceIndices);
+    } else if (priority < 0) {
+      args = TorrentSetRequestArguments(ids: [id], priorityLow: pieceIndices);
+    } else {
+      args = TorrentSetRequestArguments(ids: [id], priorityNormal: pieceIndices);
+    }
+    final request = TorrentSetRequest(arguments: args);
     _expectSuccess(
       await flutter_libtransmission.requestAsync(jsonEncode(request)),
     );

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:gravity_torrent/storage/shared_preferences.dart';
+import 'package:gravity_torrent/utils/ip_address.dart';
 import 'package:http/http.dart' as http;
 
 class SearchResult {
@@ -130,6 +131,33 @@ class SearchService {
       }
     }
 
+    // Filter out persisted engines that now fail the public-host gate
+    // (e.g. a legacy entry pointing at a private host).
+    if (_engines.isNotEmpty) {
+      final filtered = <SearchEngine>[];
+      for (final e in _engines) {
+        final uri = Uri.tryParse(e.baseUrl);
+        if (uri == null ||
+            (uri.scheme != 'http' && uri.scheme != 'https') ||
+            uri.host.isEmpty ||
+            uri.userInfo.isNotEmpty) {
+          continue;
+        }
+        if (!IpAddressScope.isPubliclyRoutableHostSync(uri.host)) {
+          if (kDebugMode) {
+            debugPrint('SearchService: dropping private engine ${e.baseUrl}');
+          }
+          continue;
+        }
+        filtered.add(e);
+      }
+      // Persist the filtered list so the bad entry does not keep reloading.
+      if (filtered.length != _engines.length) {
+        _engines = filtered;
+        await _saveEngines();
+      }
+    }
+
     // Add default engines if none exist
     if (_engines.isEmpty) {
       _engines = _getDefaultEngines();
@@ -166,8 +194,21 @@ class SearchService {
     ];
   }
 
+  /// Validates that [engine]'s URLs are safe, public HTTP(S) endpoints.
+  static Future<bool> isValidEngineUrl(SearchEngine engine) async {
+    final uri = Uri.tryParse(engine.baseUrl);
+    if (uri == null) return false;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return false;
+    if (uri.host.isEmpty) return false;
+    if (uri.userInfo.isNotEmpty) return false;
+    return IpAddressScope.isPubliclyRoutableHost(uri.host);
+  }
+
   Future<void> addEngine(SearchEngine engine) async {
     await load();
+    if (!await isValidEngineUrl(engine)) {
+      throw ArgumentError('Invalid or unsafe search engine URL: ${engine.baseUrl}');
+    }
     _engines.add(engine);
     await _saveEngines();
   }
@@ -183,6 +224,9 @@ class SearchService {
   Future<void> updateEngineAt(int index, SearchEngine engine) async {
     await load();
     if (index >= 0 && index < _engines.length) {
+      if (!await isValidEngineUrl(engine)) {
+        throw ArgumentError('Invalid or unsafe search engine URL: ${engine.baseUrl}');
+      }
       _engines[index] = engine;
       await _saveEngines();
     }
@@ -243,15 +287,31 @@ class SearchService {
     SearchEngine engine,
     String query,
   ) async {
-    final url = engine.baseUrl +
-        engine.searchPath.replaceAll('{query}', Uri.encodeComponent(query));
+    final uri = Uri.tryParse(
+      engine.baseUrl +
+          engine.searchPath.replaceAll('{query}', Uri.encodeComponent(query)),
+    );
+    if (uri == null ||
+        uri.host.isEmpty ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.userInfo.isNotEmpty) {
+      throw ArgumentError('Invalid search engine URL: ${engine.baseUrl}');
+    }
+    if (!await IpAddressScope.isPubliclyRoutableHost(uri.host)) {
+      throw ArgumentError('Search engine host is not publicly routable: ${uri.host}');
+    }
 
-    final response = await http.get(Uri.parse(url)).timeout(
+    final response = await http.get(uri).timeout(
           const Duration(seconds: 15),
         );
 
     if (response.statusCode != 200) {
       throw Exception('HTTP ${response.statusCode}');
+    }
+
+    // Guard against huge / XML-bomb bodies.
+    if (response.bodyBytes.length > 512 * 1024) {
+      throw Exception('Search response too large');
     }
 
     return _parseResults(engine.name, response.body);
