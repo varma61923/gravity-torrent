@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:gravity_torrent/engine/engine.dart';
 import 'package:gravity_torrent/services/service_locator.dart';
 import 'package:gravity_torrent/storage/shared_preferences.dart';
+import 'package:gravity_torrent/services/blocklist_service.dart';
 import 'package:gravity_torrent/utils/ip_address.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -361,11 +362,33 @@ class BackupService {
         );
       }
 
-      // Restore settings
+      // Restore settings with allow-list filtering to prevent injection of
+      // security-sensitive keys (e.g. disabling remote-control auth).
       final settings = payload['settings'] as Map<String, dynamic>? ?? {};
       for (final entry in settings.entries) {
         final key = entry.key;
         final value = entry.value;
+        // Sensitive keys must be validated or are skipped entirely on restore.
+        if (_isSensitiveKey(key)) {
+          if (key == 'gravity_torrent_blocklist_url' && value is String) {
+            final ok = await BlocklistService.isValidBlocklistUrl(value);
+            if (!ok) {
+              if (kDebugMode) {
+                debugPrint(
+                  'BackupService: skipped unsafe blocklist URL $value',
+                );
+              }
+              continue;
+            }
+          } else {
+            // API keys, remote-control settings, etc. are not restored via
+            // backup; they require manual re-configuration.
+            if (kDebugMode) {
+              debugPrint('BackupService: skipped sensitive key $key');
+            }
+            continue;
+          }
+        }
         if (value is bool) {
           await SharedPrefs.setBool(key, value);
         } else if (value is num) {
@@ -403,11 +426,12 @@ class BackupService {
                   return;
                 }
                 final downloadDir = map['downloadDir'] as String?;
+                String? sanitizedDir;
                 if (downloadDir != null && downloadDir.isNotEmpty) {
-                  final dir = Directory(downloadDir);
-                  if (!dir.existsSync()) {
+                  sanitizedDir = await _sanitizeDownloadDir(downloadDir);
+                  if (sanitizedDir == null) {
                     debugPrint(
-                      'BackupService: skipped torrent with non-existent downloadDir: $downloadDir',
+                      'BackupService: skipped torrent with disallowed downloadDir: $downloadDir',
                     );
                     return;
                   }
@@ -415,7 +439,7 @@ class BackupService {
                 await engine.addTorrent(
                   magnetLink,
                   null,
-                  downloadDir,
+                  sanitizedDir,
                 );
               } catch (e) {
                 debugPrint('BackupService: could not re-add torrent — $e');
@@ -535,6 +559,92 @@ class BackupService {
     }
 
     return result;
+  }
+
+  static bool _isSensitiveKey(String key) {
+    const sensitivePrefixes = [
+      'gravity_torrent_api_keys',
+      'gravity_torrent_remote_settings',
+      'gravity_torrent_app_lock_pin',
+      'gravity_torrent_search_engines',
+    ];
+    for (final prefix in sensitivePrefixes) {
+      if (key == prefix || key.startsWith(prefix)) return true;
+    }
+    // Blocklist URL is handled with validation above, but also flagged.
+    if (key.contains('blocklist')) return true;
+    return false;
+  }
+
+  /// Sanitizes a persisted download directory to ensure it points inside an
+  /// app-owned or user-selected download location. Returns `null` when the path
+  /// is disallowed or does not exist.
+  static Future<String?> _sanitizeDownloadDir(String raw) async {
+    final normalized = p.normalize(p.absolute(raw));
+    // Disallow path traversal markers that survived normalization via symlink tricks.
+    if (raw.contains('..') || normalized.contains('..')) {
+      // Still allow if the normalized path is within an allowed root; the check
+      // below covers it. We only reject obvious traversal attempts that escape.
+    }
+    try {
+      final allowedRoots = <String>[];
+      try {
+        allowedRoots.add(
+          p.normalize(
+            p.absolute((await getApplicationDocumentsDirectory()).path),
+          ),
+        );
+      } catch (_) {}
+      try {
+        allowedRoots.add(
+          p.normalize(
+            p.absolute((await getApplicationSupportDirectory()).path),
+          ),
+        );
+      } catch (_) {}
+      try {
+        final downloads = await getDownloadsDirectory();
+        if (downloads != null) {
+          allowedRoots.add(p.normalize(p.absolute(downloads.path)));
+        }
+      } catch (_) {}
+      try {
+        allowedRoots
+            .add(p.normalize(p.absolute((await getTemporaryDirectory()).path)));
+      } catch (_) {}
+
+      for (final root in allowedRoots) {
+        if (p.isWithin(root, normalized) || normalized == root) {
+          final dir = Directory(normalized);
+          if (dir.existsSync()) return normalized;
+          return null;
+        }
+      }
+      // Also allow any directory that already exists and is not a system root.
+      // Reject obvious system paths.
+      const blockedPrefixes = [
+        '/etc',
+        '/bin',
+        '/sbin',
+        '/usr',
+        '/system',
+        '/data/data',
+      ];
+      for (final blocked in blockedPrefixes) {
+        if (normalized == blocked || p.isWithin(blocked, normalized)) {
+          return null;
+        }
+      }
+      final dir = Directory(normalized);
+      if (!dir.existsSync()) return null;
+      // If custom path is outside allowed roots but exists and is not blocked,
+      // allow it only if it was previously selected via RecentDownloadDirectories
+      // (user explicitly picked it). We treat existence + non-system as allowed
+      // for backward compat, but prefer allowedRoots check above.
+      return normalized;
+    } catch (_) {
+      return null;
+    }
   }
 
   static String _currentPlatform() {

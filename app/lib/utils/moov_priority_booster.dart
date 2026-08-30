@@ -6,12 +6,33 @@ import 'package:gravity_torrent/engine/file.dart' as torrent_file;
 import 'package:gravity_torrent/services/service_locator.dart';
 import 'package:gravity_torrent/utils/torrent_utils.dart';
 
+class _BoosterSession {
+  int activeCount = 0;
+  final bool originalLimitDownEnabled;
+  final int originalLimitDown;
+
+  _BoosterSession({
+    required this.originalLimitDownEnabled,
+    required this.originalLimitDown,
+  });
+}
+
 /// Intelligent priority booster for video streaming.
 ///
 /// Automatically prioritizes the first 1% (header) and last 1% (moov atom)
 /// of pieces for a video file before starting sequential playback.
 class MoovPriorityBooster {
   MoovPriorityBooster._();
+
+  static final Map<int, _BoosterSession> _activeSessions = {};
+
+  @visibleForTesting
+  static void resetForTest() {
+    _activeSessions.clear();
+  }
+
+  @visibleForTesting
+  static Map<int, dynamic> get activeSessionsForTest => _activeSessions;
 
   static Future<void> boostForStreaming({
     required Torrent torrent,
@@ -26,65 +47,98 @@ class MoovPriorityBooster {
       final pieceSize = torrent.pieceSize;
       if (pieceSize <= 0) return;
 
-      // 2. Start piece and end piece for this file are directly available on the File model
+      // 2. Validate piece boundaries
       final startPiece = file.beginPiece;
       final endPiece = file.endPiece;
-      final totalPieces = endPiece - startPiece + 1;
+      if (startPiece < 0 || endPiece < startPiece) return;
+      if (torrent.pieceCount > 0 && startPiece >= torrent.pieceCount) return;
 
-      if (totalPieces <= 0) return;
+      final clampedEnd = torrent.pieceCount > 0
+          ? endPiece.clamp(0, torrent.pieceCount - 1)
+          : endPiece;
 
       if (kDebugMode) {
         debugPrint(
           'MoovPriorityBooster: boosting torrent ${torrent.id} (${file.name}): '
-          'pieces [$startPiece..$endPiece]',
+          'pieces [$startPiece..$clampedEnd]',
         );
       }
 
       // 3. Set high priority on the file
-      // Transmission uses wantedFiles / priority-high for file-level priority.
-      // We set the whole-file priority to high first, then kick sequential mode.
-      // For finer per-piece control, Transmission RPC exposes no direct
-      // piece-priority API, so we ensure sequential + file high-priority:
       final fileIndex = torrent.files.indexWhere((f) => f.name == file.name);
       if (fileIndex != -1) {
         await torrent.setFilesPriority(priorityHigh: [fileIndex]);
       }
 
-      final originalLimitDownEnabled = torrent.speedLimitDownEnabled;
-      final originalLimitDown = torrent.speedLimitDown;
-
-      await engine.setTorrentSpeedLimit(
-        torrent.id,
-        downloadLimit: 0, // unlimited while buffering header
-      );
-
       // 4. Update sequential download start piece to ensure correct order
       await torrent.setSequentialDownloadFromPiece(startPiece);
 
-      // 5. Restore the speed limit once the moov atom and header pieces
-      // are ready
+      // 5. Track speed limit state across concurrent boost calls
+      final session = _activeSessions.putIfAbsent(torrent.id, () {
+        return _BoosterSession(
+          originalLimitDownEnabled: torrent.speedLimitDownEnabled,
+          originalLimitDown: torrent.speedLimitDown,
+        );
+      });
+
+      session.activeCount++;
+
+      // Only disable speed limit if a download limit was actually active and this is the first active session
+      if (session.activeCount == 1 &&
+          session.originalLimitDownEnabled &&
+          session.originalLimitDown > 0) {
+        try {
+          await engine.setTorrentSpeedLimit(
+            torrent.id,
+            downloadLimit: 0, // unlimited while buffering header
+          );
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              'MoovPriorityBooster: failed to disable speed limit: $e',
+            );
+          }
+        }
+      }
+
+      // 6. Restore the speed limit once the moov atom and header pieces are ready
       unawaited(() async {
         try {
-          // Transmission RPC limitations: the moov atom might be at the
-          // very end
-          // of the file, but we can't reliably prioritize *just* the end piece
-          // without prioritizing the whole file. We rely on the sequential
-          // download mode and file high-priority to fetch the start and
-          // end pieces.
+          final neededPieces = startPiece == clampedEnd
+              ? [startPiece]
+              : [startPiece, clampedEnd];
+
           await waitForPiecesList(
             torrent: torrent,
-            neededPieces: [startPiece, endPiece],
+            neededPieces: neededPieces,
           );
         } catch (_) {
+          // Cancellation or piece wait error
         } finally {
           try {
-            if (originalLimitDownEnabled) {
-              await engine.setTorrentSpeedLimit(
-                torrent.id,
-                downloadLimit: originalLimitDown,
-              );
+            session.activeCount--;
+            if (session.activeCount <= 0) {
+              _activeSessions.remove(torrent.id);
+
+              // Only attempt restoration if a limit was originally active
+              if (session.originalLimitDownEnabled &&
+                  session.originalLimitDown > 0) {
+                // Fetch the live torrent state from engine to avoid clobbering
+                // user-configured limits modified during buffering.
+                final currentTorrent = await engine.fetchTorrent(torrent.id);
+                // If the speed limit was re-enabled or manually changed by the user
+                // during buffering, do NOT overwrite it with stale original limit.
+                if (!currentTorrent.speedLimitDownEnabled) {
+                  await engine.setTorrentSpeedLimit(
+                    torrent.id,
+                    downloadLimit: session.originalLimitDown,
+                  );
+                }
+              }
             }
-          } catch (_) {}
+          } catch (_) {
+            // Safe ignore if engine is closed or torrent was removed
+          }
         }
       }());
     } catch (e) {

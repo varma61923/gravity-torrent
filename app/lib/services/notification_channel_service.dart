@@ -264,7 +264,11 @@ class NotificationChannelService {
   static Future<T> _withLock<T>(Future<T> Function() task) {
     final previous = _lock;
     final current = Future<T>(() async {
-      if (previous != null) await previous;
+      if (previous != null) {
+        try {
+          await previous;
+        } catch (_) {}
+      }
       return task();
     });
     _lock = current;

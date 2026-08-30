@@ -99,7 +99,7 @@ class CastingService extends ChangeNotifier {
   /// Only renderers that actually expose `AVTransport:1` are returned, because
   /// anything else cannot be told to play a stream.
   Future<List<CastDevice>> discoverDevices() async {
-    _disposed = false;
+    if (_disposed) return const [];
     if (_isDiscovering || kIsWeb) return devices;
     _isDiscovering = true;
     _safeNotify();

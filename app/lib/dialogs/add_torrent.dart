@@ -15,6 +15,7 @@ import 'package:gravity_torrent/services/recent_download_directories_service.dar
 import 'package:gravity_torrent/utils/app_links.dart';
 import 'package:provider/provider.dart';
 import 'package:gravity_torrent/services/ads/ad_service_provider.dart';
+import 'package:gravity_torrent/utils/bencode.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AddTorrentDialog extends StatefulWidget {
@@ -74,6 +75,9 @@ class _AddTorrentDialogState extends State<AddTorrentDialog> {
   Future<void> _handleAddTorrent() async {
     try {
       String? metainfo;
+      Uint8List? rawBytes;
+      TorrentMetadata? parsedMetadata;
+
       if (_filename != null) {
         // From a .torrent file
         if (_filename!.startsWith('content:')) {
@@ -81,14 +85,21 @@ class _AddTorrentDialogState extends State<AddTorrentDialog> {
           final Content content = await ContentResolver.resolveContent(
             _filename!,
           );
-          metainfo = base64Encode(content.data);
+          rawBytes = content.data;
         } else {
           final file = File(_filename!);
-          final content = await file.readAsBytes();
-          metainfo = base64Encode(content);
+          rawBytes = await file.readAsBytes();
         }
 
-        if (metainfo.isEmpty) {
+        if (rawBytes.isEmpty) {
+          throw TorrentAddError();
+        }
+
+        metainfo = base64Encode(rawBytes);
+
+        try {
+          parsedMetadata = Bencode.decodeTorrent(rawBytes);
+        } catch (e) {
           throw TorrentAddError();
         }
       }
@@ -174,15 +185,16 @@ class _AddTorrentDialogState extends State<AddTorrentDialog> {
         }
       }
 
-      int predictedSize = 500 * 1024 * 1024; // Fallback dummy size
-      if (metainfo != null) {
-        predictedSize = metainfo.length * 1000;
+      // Compute exact predicted size from parsed .torrent metadata
+      int predictedSize = 0;
+      if (parsedMetadata != null) {
+        predictedSize = parsedMetadata.totalSize;
       }
 
       if (!mounted) return;
       final localizations = AppLocalizations.of(context);
 
-      if (freeSpace > 0 && freeSpace < predictedSize) {
+      if (freeSpace > 0 && predictedSize > 0 && freeSpace < predictedSize) {
         final proceed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
