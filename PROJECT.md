@@ -28,7 +28,7 @@ Gravity Torrent is a cross-platform BitTorrent client built with Flutter (Dart) 
 | 10 | Streaming & Priority Booster Hardening | Harden `MoovPriorityBooster` speed limit restore and streaming file offset handling | M3 | Survey | DONE |
 | 11 | Security & Path Traversal Verification | Verify and harden path sanitization in torrent creation and auto-extract | M3 | Survey | DONE |
 | 12 | Comprehensive E2E Test Suite | Build complete multi-tier test suite (Tiers 1-4) covering all features and edge cases | M4 | Survey / E2E Track | DONE |
-| 13 | Final Verification, Adversarial Hardening & Git Push | Run 100% test gate, Tier 5 adversarial hardening, commit and push to active branch | M5 | Final Milestone | IN_PROGRESS |
+| 13 | Final Verification, Adversarial Hardening & Git Push | Run 100% test gate, Tier 5 adversarial hardening, commit and push to active branch | M5 | Final Milestone | DONE |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -37,7 +37,7 @@ Gravity Torrent is a cross-platform BitTorrent client built with Flutter (Dart) 
 | M2 | UI Validation, Multi-Tracker Tiers & Seed Ratio | Lint fix in `settings.dart`, mock lookup for `blocklist_service_test.dart`, port validator bounds, BEP 12 tracker tiers, seed ratio calculation | none | DONE |
 | M3 | Search Engine Parser & Streaming Hardening | Complete `SearchService._parseResults`, harden `MoovPriorityBooster` speed limits, verify security paths | none | DONE |
 | M4 | E2E Testing Suite (Tiers 1-4) | Requirement-driven test suite with test runner and `TEST_READY.md` publication | M1, M2, M3 | DONE |
-| M5 | Final Hardening, Gate & Git Push | Pass 100% E2E tests, Tier 5 adversarial hardening, git commit and push to `fix/comprehensive-bug-hunt` | M4 | IN_PROGRESS |
+| M5 | Final Hardening, Gate & Git Push | Pass 100% E2E tests, Tier 5 adversarial hardening, git commit and push to `fix/comprehensive-bug-hunt` | M4 | DONE |
 
 ## Interface Contracts
 ### Bencode Module (`bencode.dart` ↔ `torrent_creator_service.dart`, `add_torrent.dart`)
