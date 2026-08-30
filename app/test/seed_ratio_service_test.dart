@@ -81,7 +81,9 @@ void main() {
     });
 
     group('calculateRatio', () {
-      test('Case 1: Standard download and seed uses uploadedEver / downloadedEver', () {
+      test(
+          'Case 1: Standard download and seed uses uploadedEver / downloadedEver',
+          () {
         final t = FakeTorrent(
           id: 1,
           downloadedEver: 1000,
@@ -101,7 +103,8 @@ void main() {
         expect(SeedRatioService.calculateRatio(t), equals(3.0));
       });
 
-      test('Case 3: Initial seeder (downloadedEver == 0) falls back to size', () {
+      test('Case 3: Initial seeder (downloadedEver == 0) falls back to size',
+          () {
         final t = FakeTorrent(
           id: 3,
           downloadedEver: 0,
@@ -172,7 +175,8 @@ void main() {
         expect(service.getGoal(42), equals(3.5));
       });
 
-      test('Case 9: Handles corrupted json in SharedPreferences gracefully', () async {
+      test('Case 9: Handles corrupted json in SharedPreferences gracefully',
+          () async {
         SharedPreferences.setMockInitialValues({
           'gravity_torrent_seed_ratio_goals': 'invalid-json-content{',
         });
@@ -217,7 +221,8 @@ void main() {
         expect(mockEngine.pausedIds, isEmpty);
       });
 
-      test('Case 12: Does not pause non-seeding torrent even if ratio exceeded', () async {
+      test('Case 12: Does not pause non-seeding torrent even if ratio exceeded',
+          () async {
         final service = SeedRatioService.instance;
         await service.setGoal(1, 1.0);
 
@@ -247,7 +252,8 @@ void main() {
         expect(mockEngine.pausedIds, isEmpty);
       });
 
-      test('Case 14: Pauses initial seeder when uploadedEver / size >= goal', () async {
+      test('Case 14: Pauses initial seeder when uploadedEver / size >= goal',
+          () async {
         final service = SeedRatioService.instance;
         await service.setGoal(2, 1.2);
 

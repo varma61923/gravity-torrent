@@ -42,7 +42,9 @@ class E2ESecurityMockEngine implements Engine {
   @override
   Future<void> setTorrentSequentialDownload(int id, bool sequential) async {
     if (throwOnSequential) {
-      throw const SocketException('Simulated engine failure on sequential mode');
+      throw const SocketException(
+        'Simulated engine failure on sequential mode',
+      );
     }
     sequentialDownloads[id] = sequential;
   }
@@ -68,7 +70,8 @@ class E2ESecurityMockEngine implements Engine {
       pieceCount: 100,
       pieceSize: 65536,
       pieces: List<bool>.filled(100, true),
-      speedLimitDownEnabled: downloadSpeedLimits.containsKey(id) && downloadSpeedLimits[id]! > 0,
+      speedLimitDownEnabled:
+          downloadSpeedLimits.containsKey(id) && downloadSpeedLimits[id]! > 0,
       speedLimitDown: downloadSpeedLimits[id] ?? 0,
       engineRef: this,
     );
@@ -125,7 +128,8 @@ class E2ESecurityFakeTorrent extends Torrent {
               ),
             ],
         super(
-          pieces: pieces ?? List<bool>.filled(pieceCount > 0 ? pieceCount : 1, true),
+          pieces: pieces ??
+              List<bool>.filled(pieceCount > 0 ? pieceCount : 1, true),
           files: files ??
               [
                 torrent_file.File(
@@ -190,7 +194,8 @@ void main() {
     getIt.registerSingleton<Engine>(mockEngine);
     app_main.engine = mockEngine;
 
-    tempDir = await Directory.systemTemp.createTemp('gravity_e2e_tier5_stress_');
+    tempDir =
+        await Directory.systemTemp.createTemp('gravity_e2e_tier5_stress_');
   });
 
   tearDown(() async {
@@ -207,7 +212,8 @@ void main() {
   // =========================================================================
   // 1. SSRF Bypass Variations & IP Resolution Resilience
   // =========================================================================
-  group('Tier 5 - Area 1: SSRF Bypass Variations & IP Classification Hardening', () {
+  group('Tier 5 - Area 1: SSRF Bypass Variations & IP Classification Hardening',
+      () {
     test('1.1: IPv4-mapped IPv6 address classification & SSRF defense', () {
       final v4MappedCases = <String, AddressScope>{
         '::ffff:127.0.0.1': AddressScope.loopback,
@@ -230,7 +236,8 @@ void main() {
         expect(
           scope,
           entry.value,
-          reason: 'IPv4-mapped IPv6 ${entry.key} must classify as ${entry.value}',
+          reason:
+              'IPv4-mapped IPv6 ${entry.key} must classify as ${entry.value}',
         );
 
         final isPublic = IpAddressScope.isPubliclyRoutable(address);
@@ -238,7 +245,8 @@ void main() {
         expect(
           isPublic,
           expectedPublic,
-          reason: 'isPubliclyRoutable for ${entry.key} should be $expectedPublic',
+          reason:
+              'isPubliclyRoutable for ${entry.key} should be $expectedPublic',
         );
 
         final isPrivate = IpAddressScope.isPrivate(address);
@@ -255,7 +263,8 @@ void main() {
       }
     });
 
-    test('1.2: IPv4-compatible IPv6 (deprecated ::/96) treated as reserved', () {
+    test('1.2: IPv4-compatible IPv6 (deprecated ::/96) treated as reserved',
+        () {
       final compatAddresses = ['::127.0.0.1', '::10.0.0.1', '::1.1.1.1'];
       for (final ipStr in compatAddresses) {
         final address = InternetAddress(ipStr);
@@ -263,7 +272,8 @@ void main() {
         expect(
           isPublic,
           isFalse,
-          reason: 'Deprecated IPv4-compatible IPv6 $ipStr must not be publicly routable',
+          reason:
+              'Deprecated IPv4-compatible IPv6 $ipStr must not be publicly routable',
         );
       }
     });
@@ -291,7 +301,9 @@ void main() {
       }
     });
 
-    test('1.4: Octal, Hex, Dword, and Shorthand IPv4 Bypass Rejection in Sync Gate', () {
+    test(
+        '1.4: Octal, Hex, Dword, and Shorthand IPv4 Bypass Rejection in Sync Gate',
+        () {
       final malformedOrBypassHosts = [
         '0177.0.0.1', // Octal 127
         '012.0.0.1', // Octal 10
@@ -313,7 +325,8 @@ void main() {
         expect(
           routable,
           isFalse,
-          reason: 'Host "$host" must be rejected synchronously by isPubliclyRoutableHostSync',
+          reason:
+              'Host "$host" must be rejected synchronously by isPubliclyRoutableHostSync',
         );
       }
     });
@@ -350,7 +363,8 @@ void main() {
       }
     });
 
-    test('1.6: DNS timeout fails closed & multi-homed mixed IP validation', () async {
+    test('1.6: DNS timeout fails closed & multi-homed mixed IP validation',
+        () async {
       // Mock resolver that hangs past the timeout duration
       Future<List<InternetAddress>> hangingResolver(String host) async {
         await Future.delayed(const Duration(milliseconds: 500));
@@ -383,7 +397,8 @@ void main() {
       expect(
         mixedResult,
         isFalse,
-        reason: 'Host resolving to mixed public/internal IPs must fail validation',
+        reason:
+            'Host resolving to mixed public/internal IPs must fail validation',
       );
     });
 
@@ -436,8 +451,11 @@ void main() {
   // =========================================================================
   // 2. Archive Auto-Extract Path Traversal, Zip-Slip & Stream Hardening
   // =========================================================================
-  group('Tier 5 - Area 2: Archive Auto-Extract Path Traversal & Zip-Slip Hardening', () {
-    test('2.1: Torrent name directory traversal attack vectors sanitized', () async {
+  group(
+      'Tier 5 - Area 2: Archive Auto-Extract Path Traversal & Zip-Slip Hardening',
+      () {
+    test('2.1: Torrent name directory traversal attack vectors sanitized',
+        () async {
       final extractService = AutoExtractService.instance;
       extractService.setAutoExtractEnabled(true);
       extractService.setDestinationFolder(tempDir.path);
@@ -474,7 +492,9 @@ void main() {
       }
     });
 
-    test('2.2: Zip-slip archive entries with relative & absolute paths rejected', () async {
+    test(
+        '2.2: Zip-slip archive entries with relative & absolute paths rejected',
+        () async {
       final extractService = AutoExtractService.instance;
       extractService.setAutoExtractEnabled(true);
       extractService.setDestinationFolder(tempDir.path);
@@ -512,20 +532,25 @@ void main() {
       );
 
       final parentOfTemp = tempDir.parent;
-      final escapedSecret1 = File(p.join(parentOfTemp.path, 'outside_secret.txt'));
-      final escapedSecret2 = File(p.join(parentOfTemp.path, 'windows_evil.exe'));
+      final escapedSecret1 =
+          File(p.join(parentOfTemp.path, 'outside_secret.txt'));
+      final escapedSecret2 =
+          File(p.join(parentOfTemp.path, 'windows_evil.exe'));
 
       expect(escapedSecret1.existsSync(), isFalse);
       expect(escapedSecret2.existsSync(), isFalse);
     });
 
-    test('2.3: Standalone Gzip / Bzip2 stream decompression & corrupted stream recovery', () async {
+    test(
+        '2.3: Standalone Gzip / Bzip2 stream decompression & corrupted stream recovery',
+        () async {
       final extractService = AutoExtractService.instance;
       extractService.setAutoExtractEnabled(true);
       extractService.setDestinationFolder(tempDir.path);
 
       // 1. Valid Gzip decompression
-      final rawData = utf8.encode('High-entropy payload for decompression testing 2026');
+      final rawData =
+          utf8.encode('High-entropy payload for decompression testing 2026');
       final gzippedData = const GZipEncoder().encode(rawData);
       final gzFile = File(p.join(tempDir.path, 'sample.txt.gz'));
       await gzFile.writeAsBytes(gzippedData);
@@ -534,15 +559,23 @@ void main() {
 
       final extractedGz = File(p.join(tempDir.path, 'GzRelease', 'sample.txt'));
       expect(extractedGz.existsSync(), isTrue);
-      expect(extractedGz.readAsStringSync(), 'High-entropy payload for decompression testing 2026');
+      expect(
+        extractedGz.readAsStringSync(),
+        'High-entropy payload for decompression testing 2026',
+      );
 
       // 2. Corrupted / truncated Gzip stream error handling
       final corruptGz = File(p.join(tempDir.path, 'corrupted.txt.gz'));
-      await corruptGz.writeAsBytes([0x1F, 0x8B, 0xFF, 0xFF, 0x00]); // Corrupted header
+      await corruptGz
+          .writeAsBytes([0x1F, 0x8B, 0xFF, 0xFF, 0x00]); // Corrupted header
 
-      await extractService.handleTorrentCompletion('CorruptedRelease', corruptGz.path);
+      await extractService.handleTorrentCompletion(
+        'CorruptedRelease',
+        corruptGz.path,
+      );
 
-      final corruptOut = File(p.join(tempDir.path, 'CorruptedRelease', 'corrupted.txt'));
+      final corruptOut =
+          File(p.join(tempDir.path, 'CorruptedRelease', 'corrupted.txt'));
       expect(
         corruptOut.existsSync(),
         isFalse,
@@ -550,7 +583,8 @@ void main() {
       );
     });
 
-    test('2.4: Concurrent extraction stress across multiple archives', () async {
+    test('2.4: Concurrent extraction stress across multiple archives',
+        () async {
       final extractService = AutoExtractService.instance;
       extractService.setAutoExtractEnabled(true);
       extractService.setDestinationFolder(tempDir.path);
@@ -573,7 +607,8 @@ void main() {
       await Future.wait(futures);
 
       for (int i = 0; i < 15; i++) {
-        final extractedFile = File(p.join(tempDir.path, 'Release_$i', 'data_$i.txt'));
+        final extractedFile =
+            File(p.join(tempDir.path, 'Release_$i', 'data_$i.txt'));
         expect(
           extractedFile.existsSync(),
           isTrue,
@@ -591,18 +626,29 @@ void main() {
       archive.addFile(ArchiveFile('disabled.txt', 4, utf8.encode('test')));
       zipFile.writeAsBytesSync(ZipEncoder().encode(archive));
 
-      await extractService.handleTorrentCompletion('DisabledTorrent', zipFile.path);
+      await extractService.handleTorrentCompletion(
+        'DisabledTorrent',
+        zipFile.path,
+      );
 
       final outDir = Directory(p.join(tempDir.path, 'DisabledTorrent'));
-      expect(outDir.existsSync(), isFalse, reason: 'Disabled auto-extract must perform no work');
+      expect(
+        outDir.existsSync(),
+        isFalse,
+        reason: 'Disabled auto-extract must perform no work',
+      );
     });
   });
 
   // =========================================================================
   // 3. ReDoS Stress Testing & Adversarial Search Results Parsing
   // =========================================================================
-  group('Tier 5 - Area 3: ReDoS Stress Testing & Search Engine Parsing Hardening', () {
-    test('3.1: ReDoS attack with 500 unclosed nested HTML tags executes in < 300ms', () {
+  group(
+      'Tier 5 - Area 3: ReDoS Stress Testing & Search Engine Parsing Hardening',
+      () {
+    test(
+        '3.1: ReDoS attack with 500 unclosed nested HTML tags executes in < 300ms',
+        () {
       final searchService = SearchService.instance;
 
       // Construct a pathological ReDoS payload with 500 unclosed cards & anchors
@@ -610,44 +656,55 @@ void main() {
       buffer.write('<html><body><div class="main-container">');
       for (int i = 0; i < 500; i++) {
         buffer.write('<div class="card item list-entry" data-id="$i">');
-        buffer.write('<a class="title detLink" href="magnet:?xt=urn:btih:abcdef1234567890abcdef1234567890abcdef12&dn=Item$i">');
+        buffer.write(
+          '<a class="title detLink" href="magnet:?xt=urn:btih:abcdef1234567890abcdef1234567890abcdef12&dn=Item$i">',
+        );
         buffer.write('<span>Unclosed item title $i');
       }
       buffer.write('</div></body></html>');
 
       final payload = buffer.toString();
       final stopwatch = Stopwatch()..start();
-      final results = searchService.parseResultsForTesting('ReDoSTest', payload);
+      final results =
+          searchService.parseResultsForTesting('ReDoSTest', payload);
       stopwatch.stop();
 
       expect(
         stopwatch.elapsedMilliseconds,
         lessThan(300),
-        reason: 'Parser must resist ReDoS catastrophic backtracking and complete in < 300ms',
+        reason:
+            'Parser must resist ReDoS catastrophic backtracking and complete in < 300ms',
       );
       expect(results, isA<List<SearchResult>>());
     });
 
-    test('3.2: Pathological 500KB alternating title and unclosed tags payload', () {
+    test('3.2: Pathological 500KB alternating title and unclosed tags payload',
+        () {
       final searchService = SearchService.instance;
 
       final buffer = StringBuffer();
       for (int i = 0; i < 2000; i++) {
-        buffer.write('<tr><td><a href="/torrent/0123456789abcdef0123456789abcdef01234567">Release $i');
-        buffer.write('<span class="seeds">100</span><span class="leeches">50</span>');
+        buffer.write(
+          '<tr><td><a href="/torrent/0123456789abcdef0123456789abcdef01234567">Release $i',
+        );
+        buffer.write(
+          '<span class="seeds">100</span><span class="leeches">50</span>',
+        );
         buffer.write('<td align="right">1.5 GB</td></tr>');
       }
 
       final payload = buffer.toString();
       final stopwatch = Stopwatch()..start();
-      final results = searchService.parseResultsForTesting('TableStress', payload);
+      final results =
+          searchService.parseResultsForTesting('TableStress', payload);
       stopwatch.stop();
 
       expect(stopwatch.elapsedMilliseconds, lessThan(400));
       expect(results.length, greaterThan(0));
     });
 
-    test('3.3: HTML entity bomb & malformed unicode sequences normalization', () {
+    test('3.3: HTML entity bomb & malformed unicode sequences normalization',
+        () {
       final searchService = SearchService.instance;
 
       const html = '''
@@ -691,13 +748,19 @@ void main() {
           ''');
         } else {
           // Corrupted / malformed row without magnet
-          buffer.write('<tr><td><a>Invalid junk row without magnet $i</td></tr>');
+          buffer
+              .write('<tr><td><a>Invalid junk row without magnet $i</td></tr>');
         }
       }
       buffer.write('</table>');
 
-      final results = searchService.parseResultsForTesting('MixedTest', buffer.toString());
-      expect(results.length, 500, reason: 'Parser should extract exactly the 500 valid entries');
+      final results =
+          searchService.parseResultsForTesting('MixedTest', buffer.toString());
+      expect(
+        results.length,
+        500,
+        reason: 'Parser should extract exactly the 500 valid entries',
+      );
     });
 
     test('3.5: Extreme units and boundary counts in size/seed parsing', () {
@@ -721,11 +784,16 @@ void main() {
             <span class="leechers">-50</span>
           </div>
         ''';
-        final results = searchService.parseResultsForTesting('UnitSource', html);
+        final results =
+            searchService.parseResultsForTesting('UnitSource', html);
         expect(results.length, 1);
         expect(results.first.size, expectedBytes);
         expect(results.first.seeders, 999999);
-        expect(results.first.leechers, 0, reason: 'Negative leechers should clamp to 0');
+        expect(
+          results.first.leechers,
+          0,
+          reason: 'Negative leechers should clamp to 0',
+        );
       }
     });
   });
@@ -733,8 +801,12 @@ void main() {
   // =========================================================================
   // 4. Concurrent Moov Priority Boosting & Concurrency Stress
   // =========================================================================
-  group('Tier 5 - Area 4: Concurrent Moov Priority Boosting & Concurrency Stress', () {
-    test('4.1: High-concurrency rapid seek burst (50 concurrent calls on same torrent)', () async {
+  group(
+      'Tier 5 - Area 4: Concurrent Moov Priority Boosting & Concurrency Stress',
+      () {
+    test(
+        '4.1: High-concurrency rapid seek burst (50 concurrent calls on same torrent)',
+        () async {
       final torrent = E2ESecurityFakeTorrent(
         id: 501,
         speedLimitDownEnabled: true,
@@ -762,7 +834,8 @@ void main() {
       expect(mockEngine.highPriorityFiles[501], [0]);
     });
 
-    test('4.2: Multi-torrent parallel priority boosting (20 distinct torrents)', () async {
+    test('4.2: Multi-torrent parallel priority boosting (20 distinct torrents)',
+        () async {
       final futures = <Future<void>>[];
       for (int id = 600; id < 620; id++) {
         final t = E2ESecurityFakeTorrent(
@@ -833,7 +906,8 @@ void main() {
       expect(mockEngine.sequentialDownloads[702], isTrue);
     });
 
-    test('4.4: User manual speed limit override preservation during buffering', () async {
+    test('4.4: User manual speed limit override preservation during buffering',
+        () async {
       final torrent = E2ESecurityFakeTorrent(
         id: 801,
         speedLimitDownEnabled: true,
@@ -850,7 +924,8 @@ void main() {
       expect(mockEngine.downloadSpeedLimits[801], 0);
     });
 
-    test('4.5: Engine error fault injection handled safely without throwing', () async {
+    test('4.5: Engine error fault injection handled safely without throwing',
+        () async {
       mockEngine.throwOnSpeedLimit = true;
       mockEngine.throwOnSequential = true;
 
@@ -872,7 +947,9 @@ void main() {
   // =========================================================================
   // 5. Bencode Dictionary Key Ordering with Raw UTF-8 Multi-byte Comparison
   // =========================================================================
-  group('Tier 5 - Area 5: Bencode Multi-Byte Key Ordering & BEP 0003 Strictness', () {
+  group(
+      'Tier 5 - Area 5: Bencode Multi-Byte Key Ordering & BEP 0003 Strictness',
+      () {
     test('5.1: Raw UTF-8 byte comparison vs Unicode code point ordering', () {
       // In UTF-8:
       // "a"   -> [0x61]
@@ -936,7 +1013,9 @@ void main() {
       expect(posTesting, lessThan(posTests));
     });
 
-    test('5.3: UTF-8 Uint8List keys in Bencode dictionaries & non-UTF8 rejection', () {
+    test(
+        '5.3: UTF-8 Uint8List keys in Bencode dictionaries & non-UTF8 rejection',
+        () {
       final utf8Key1 = Uint8List.fromList(utf8.encode('alpha'));
       final utf8Key2 = Uint8List.fromList(utf8.encode('beta'));
       final utf8Key3 = Uint8List.fromList(utf8.encode('gamma'));
@@ -981,7 +1060,8 @@ void main() {
       );
 
       // Non-strict mode must parse successfully
-      final relaxed = Bencode.decode(bytes, strictKeyOrder: false) as Map<String, dynamic>;
+      final relaxed =
+          Bencode.decode(bytes, strictKeyOrder: false) as Map<String, dynamic>;
       expect(relaxed['z'], 2);
       expect(relaxed['a'], 1);
 
@@ -993,7 +1073,9 @@ void main() {
       );
     });
 
-    test('5.5: 1,000 international multi-byte keys dictionary scale & SHA-1 roundtrip', () {
+    test(
+        '5.5: 1,000 international multi-byte keys dictionary scale & SHA-1 roundtrip',
+        () {
       final largeDict = <String, dynamic>{};
       for (int i = 0; i < 1000; i++) {
         final key = 'key_${i}_漢字_тест_🚀_$i';
@@ -1004,7 +1086,8 @@ void main() {
       final digest = sha1.convert(encoded);
       expect(digest.bytes.length, 20);
 
-      final decoded = Bencode.decode(encoded, strictKeyOrder: true) as Map<String, dynamic>;
+      final decoded =
+          Bencode.decode(encoded, strictKeyOrder: true) as Map<String, dynamic>;
       expect(decoded.length, 1000);
       expect(decoded['key_999_漢字_тест_🚀_999'], 999);
     });
@@ -1013,7 +1096,9 @@ void main() {
   // =========================================================================
   // 6. Seed Ratio Auto-Stop Precision & Boundary Calculation Hardening
   // =========================================================================
-  group('Tier 5 - Area 6: Seed Ratio Auto-Stop Precision & Boundary Calculation Hardening', () {
+  group(
+      'Tier 5 - Area 6: Seed Ratio Auto-Stop Precision & Boundary Calculation Hardening',
+      () {
     test('6.1: High-precision floating point ratio boundaries', () async {
       final seedRatioService = SeedRatioService.instance;
       await seedRatioService.setGoal(101, 1.0);
@@ -1083,7 +1168,8 @@ void main() {
       expect(ratio, lessThanOrEqualTo(0.0));
     });
 
-    test('6.4: Massive 64-bit integer values (int64 scale) calculation', () async {
+    test('6.4: Massive 64-bit integer values (int64 scale) calculation',
+        () async {
       final seedRatioService = SeedRatioService.instance;
       await seedRatioService.setGoal(301, 2.0);
 
@@ -1102,7 +1188,9 @@ void main() {
       expect(mockEngine.pausedTorrents, contains(301));
     });
 
-    test('6.5: Batch evaluation with 100 torrents, ignored IDs, and non-seeding statuses', () async {
+    test(
+        '6.5: Batch evaluation with 100 torrents, ignored IDs, and non-seeding statuses',
+        () async {
       final seedRatioService = SeedRatioService.instance;
       final torrents = <Torrent>[];
       final ignoredIds = <int>{};

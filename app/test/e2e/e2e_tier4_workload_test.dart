@@ -567,9 +567,12 @@ udp://backup.private-node.net:6969/announce
 
       // 2. Configure SeedRatioService custom per-torrent ratio overrides
       await SeedRatioService.instance.load();
-      await SeedRatioService.instance.setGoal(501, 2.0); // Per-torrent goal override
-      await SeedRatioService.instance.setGoal(502, 2.0); // Per-torrent goal override
-      await SeedRatioService.instance.setGoal(503, 1.5); // Per-torrent goal override
+      await SeedRatioService.instance
+          .setGoal(501, 2.0); // Per-torrent goal override
+      await SeedRatioService.instance
+          .setGoal(502, 2.0); // Per-torrent goal override
+      await SeedRatioService.instance
+          .setGoal(503, 1.5); // Per-torrent goal override
 
       // 3. Setup 4 torrents in different swarm states:
       // - 501: Seeding, downloaded 1000, uploaded 2500 (ratio 2.5 >= 2.0 per-torrent goal) -> should pause
@@ -683,13 +686,28 @@ http://backup.tracker.net:80/announce
       }
 
       // 3. Create real zip archive with documentation and binaries
-      final srcDir = Directory(p.join(tempDir.path, 'dev_bundle'))..createSync();
-      final docFile = File(p.join(srcDir.path, 'guide.md'))..writeAsStringSync('# Dev Bundle Guide\nInstructions here.');
-      final binFile = File(p.join(srcDir.path, 'tool.bin'))..writeAsBytesSync(List<int>.generate(8192, (i) => (i * 7) % 256));
+      final srcDir = Directory(p.join(tempDir.path, 'dev_bundle'))
+        ..createSync();
+      final docFile = File(p.join(srcDir.path, 'guide.md'))
+        ..writeAsStringSync('# Dev Bundle Guide\nInstructions here.');
+      final binFile = File(p.join(srcDir.path, 'tool.bin'))
+        ..writeAsBytesSync(List<int>.generate(8192, (i) => (i * 7) % 256));
 
       final archive = Archive();
-      archive.addFile(ArchiveFile('guide.md', docFile.lengthSync(), docFile.readAsBytesSync()));
-      archive.addFile(ArchiveFile('bin/tool.bin', binFile.lengthSync(), binFile.readAsBytesSync()));
+      archive.addFile(
+        ArchiveFile(
+          'guide.md',
+          docFile.lengthSync(),
+          docFile.readAsBytesSync(),
+        ),
+      );
+      archive.addFile(
+        ArchiveFile(
+          'bin/tool.bin',
+          binFile.lengthSync(),
+          binFile.readAsBytesSync(),
+        ),
+      );
       final zipBytes = ZipEncoder().encode(archive);
 
       final bundleZip = File(p.join(tempDir.path, 'dev_tools.zip'));
@@ -711,7 +729,8 @@ http://backup.tracker.net:80/announce
       expect(meta.infoHashHex.length, equals(40));
 
       // 5. Configure AutoExtractService and simulate download completion
-      final extractTarget = Directory(p.join(tempDir.path, 'extracted_dev_bundle'))..createSync();
+      final extractTarget =
+          Directory(p.join(tempDir.path, 'extracted_dev_bundle'))..createSync();
       final autoExtract = AutoExtractService.instance;
       autoExtract.setAutoExtractEnabled(true);
       autoExtract.setDestinationFolder(extractTarget.path);
@@ -722,11 +741,24 @@ http://backup.tracker.net:80/announce
       );
 
       // 6. Verify extracted folder contents and integrity
-      final extractedGuide = File(p.join(extractTarget.path, 'Developer Tools Bundle 2026', 'guide.md'));
+      final extractedGuide = File(
+        p.join(
+          extractTarget.path,
+          'Developer Tools Bundle 2026',
+          'guide.md',
+        ),
+      );
       expect(extractedGuide.existsSync(), isTrue);
       expect(extractedGuide.readAsStringSync(), contains('Dev Bundle Guide'));
 
-      final extractedBin = File(p.join(extractTarget.path, 'Developer Tools Bundle 2026', 'bin', 'tool.bin'));
+      final extractedBin = File(
+        p.join(
+          extractTarget.path,
+          'Developer Tools Bundle 2026',
+          'bin',
+          'tool.bin',
+        ),
+      );
       expect(extractedBin.existsSync(), isTrue);
       expect(extractedBin.lengthSync(), equals(8192));
     });

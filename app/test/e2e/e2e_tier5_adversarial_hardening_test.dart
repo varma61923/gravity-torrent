@@ -68,7 +68,8 @@ class E2ETier5MockEngine implements Engine {
       pieceCount: 100,
       pieceSize: 65536,
       pieces: List<bool>.filled(100, true),
-      speedLimitDownEnabled: downloadSpeedLimits.containsKey(id) && downloadSpeedLimits[id]! > 0,
+      speedLimitDownEnabled:
+          downloadSpeedLimits.containsKey(id) && downloadSpeedLimits[id]! > 0,
       speedLimitDown: downloadSpeedLimits[id] ?? 0,
       engineRef: this,
     );
@@ -218,7 +219,8 @@ void main() {
   // Section 1: BEP 0003 Bencode Adversarial Hardening
   // =========================================================================
   group('Tier 5 - Section 1: BEP 0003 Bencode Adversarial Hardening', () {
-    test('1.1: Empty dictionaries, nested empty structures, and empty strings', () {
+    test('1.1: Empty dictionaries, nested empty structures, and empty strings',
+        () {
       // Empty dict 'de'
       final emptyDict = Bencode.decode(Uint8List.fromList(ascii.encode('de')));
       expect(emptyDict, isA<Map<String, dynamic>>());
@@ -249,7 +251,9 @@ void main() {
       expect(Bencode.encode([]), Uint8List.fromList(ascii.encode('le')));
     });
 
-    test('1.2: Non-ASCII and multi-byte UTF-8 dictionary keys with byte-order sorting', () {
+    test(
+        '1.2: Non-ASCII and multi-byte UTF-8 dictionary keys with byte-order sorting',
+        () {
       final map = <String, dynamic>{
         '🚀': 'rocket',
         'alpha': 1,
@@ -310,7 +314,9 @@ void main() {
       );
     });
 
-    test('1.5: TorrentMetadata captureInfoSlice SHA-1 hash integrity on unconventional key orders', () {
+    test(
+        '1.5: TorrentMetadata captureInfoSlice SHA-1 hash integrity on unconventional key orders',
+        () {
       final pieceBytes = Uint8List.fromList(List.filled(20, 0xAB));
       final infoDict = <String, dynamic>{
         'length': 1048576,
@@ -319,7 +325,8 @@ void main() {
         'pieces': pieceBytes,
       };
       final rawInfoBytes = Bencode.encode(infoDict);
-      final expectedSha1Hex = sha1.convert(rawInfoBytes).toString().toLowerCase();
+      final expectedSha1Hex =
+          sha1.convert(rawInfoBytes).toString().toLowerCase();
 
       final torrentDict = <String, dynamic>{
         'announce': 'http://tracker.example.com:80/announce',
@@ -341,13 +348,17 @@ void main() {
       expect(() => metadata.getPieceHash(1), throwsA(isA<RangeError>()));
     });
 
-    test('1.6: Extraneous trailing data rejected when allowTrailingData is false', () {
-      final validWithTrailing = Uint8List.fromList(ascii.encode('i42eEXTRA_BYTES'));
+    test(
+        '1.6: Extraneous trailing data rejected when allowTrailingData is false',
+        () {
+      final validWithTrailing =
+          Uint8List.fromList(ascii.encode('i42eEXTRA_BYTES'));
       expect(
         () => Bencode.decode(validWithTrailing, allowTrailingData: false),
         throwsA(isA<FormatException>()),
       );
-      final decodedAllowed = Bencode.decode(validWithTrailing, allowTrailingData: true);
+      final decodedAllowed =
+          Bencode.decode(validWithTrailing, allowTrailingData: true);
       expect(decodedAllowed, equals(42));
     });
   });
@@ -356,9 +367,10 @@ void main() {
   // Section 2: BEP 0012 Multi-Tracker Tiering & Torrent Creation Hardening
   // =========================================================================
   group('Tier 5 - Section 2: BEP 0012 Multi-Tracker Tiering & Creation', () {
-    test('2.1: Tracker tier parsing with mixed Windows CRLF/LF and multiple blank lines', () {
-      const multilineTrackers =
-          '  udp://tracker1.org:6969/announce  \r\n'
+    test(
+        '2.1: Tracker tier parsing with mixed Windows CRLF/LF and multiple blank lines',
+        () {
+      const multilineTrackers = '  udp://tracker1.org:6969/announce  \r\n'
           'http://tracker2.org:80/announce\n'
           '\r\n\r\n'
           '  \t  \n'
@@ -376,14 +388,20 @@ void main() {
       expect(tiers[2], ['wss://tracker4.org:443/announce']);
     });
 
-    test('2.2: Multi-file directory torrent creation with nested dirs and private flag', () async {
-      final sourceDir = Directory(p.join(tempDir.path, 'release_payload'))..createSync();
+    test(
+        '2.2: Multi-file directory torrent creation with nested dirs and private flag',
+        () async {
+      final sourceDir = Directory(p.join(tempDir.path, 'release_payload'))
+        ..createSync();
       final subDirA = Directory(p.join(sourceDir.path, 'video'))..createSync();
       final subDirB = Directory(p.join(sourceDir.path, 'subs'))..createSync();
 
-      File(p.join(subDirA.path, 'movie.mp4')).writeAsBytesSync(List.filled(70000, 0x41));
-      File(p.join(subDirB.path, 'eng.srt')).writeAsBytesSync(List.filled(2500, 0x42));
-      File(p.join(sourceDir.path, 'readme.txt')).writeAsBytesSync(List.filled(500, 0x43));
+      File(p.join(subDirA.path, 'movie.mp4'))
+          .writeAsBytesSync(List.filled(70000, 0x41));
+      File(p.join(subDirB.path, 'eng.srt'))
+          .writeAsBytesSync(List.filled(2500, 0x42));
+      File(p.join(sourceDir.path, 'readme.txt'))
+          .writeAsBytesSync(List.filled(500, 0x43));
 
       int progressCallbacks = 0;
       final outTorrentPath = await TorrentCreatorService.create(
@@ -417,13 +435,24 @@ void main() {
       expect(metadata.createdBy, 'Gravity Release Bot');
 
       final filePaths = metadata.files.map((f) => f.path).toList();
-      expect(filePaths.contains('video/movie.mp4') || filePaths.contains(p.join('video', 'movie.mp4')), isTrue);
-      expect(filePaths.contains('subs/eng.srt') || filePaths.contains(p.join('subs', 'eng.srt')), isTrue);
+      expect(
+        filePaths.contains('video/movie.mp4') ||
+            filePaths.contains(p.join('video', 'movie.mp4')),
+        isTrue,
+      );
+      expect(
+        filePaths.contains('subs/eng.srt') ||
+            filePaths.contains(p.join('subs', 'eng.srt')),
+        isTrue,
+      );
       expect(filePaths.contains('readme.txt'), isTrue);
     });
 
-    test('2.3: Tracker-less creation with empty trackers list generates valid DHT metainfo', () async {
-      final sampleFile = File(p.join(tempDir.path, 'standalone.iso'))..writeAsBytesSync(List.filled(65536, 0x55));
+    test(
+        '2.3: Tracker-less creation with empty trackers list generates valid DHT metainfo',
+        () async {
+      final sampleFile = File(p.join(tempDir.path, 'standalone.iso'))
+        ..writeAsBytesSync(List.filled(65536, 0x55));
 
       final outPath = await TorrentCreatorService.create(
         inputPath: sampleFile.path,
@@ -444,7 +473,9 @@ void main() {
   // Section 3: SeedRatioService & DetailsTab Calculations Hardening
   // =========================================================================
   group('Tier 5 - Section 3: SeedRatioService & DetailsTab Calculations', () {
-    test('3.1: calculateRatio exact BitTorrent logic across all boundary divisions', () {
+    test(
+        '3.1: calculateRatio exact BitTorrent logic across all boundary divisions',
+        () {
       // 1. Normal active download: downloadedEver > 0
       final t1 = E2ETier5FakeTorrent(
         id: 101,
@@ -482,7 +513,9 @@ void main() {
       expect(SeedRatioService.calculateRatio(t4), equals(0.0));
     });
 
-    test('3.2: checkAndStop auto-stop logic, ignored IDs, and non-seeding immunity', () async {
+    test(
+        '3.2: checkAndStop auto-stop logic, ignored IDs, and non-seeding immunity',
+        () async {
       final service = SeedRatioService.instance;
       await service.setGoal(201, 1.5);
       await service.setGoal(202, 2.0);
@@ -529,7 +562,9 @@ void main() {
       expect(mockEngine.pausedTorrents, isNot(contains(204)));
     });
 
-    test('3.3: SeedRatioService goal storage persistence, removeGoal, and corruption recovery', () async {
+    test(
+        '3.3: SeedRatioService goal storage persistence, removeGoal, and corruption recovery',
+        () async {
       final service = SeedRatioService.instance;
       await service.setGoal(555, 3.25);
       expect(service.hasGoal(555), isTrue);
@@ -540,13 +575,18 @@ void main() {
       expect(service.getGoal(555), isNull);
 
       // Corrupted JSON storage handling
-      await SharedPrefsStorage.setString('gravity_torrent_seed_ratio_goals', '{bad_json:[');
+      await SharedPrefsStorage.setString(
+        'gravity_torrent_seed_ratio_goals',
+        '{bad_json:[',
+      );
       service.resetForTest();
       await service.load(); // Should not crash
       expect(service.hasGoal(555), isFalse);
     });
 
-    testWidgets('3.4: DetailsTab displays calculated ratio and handles goal setting', (tester) async {
+    testWidgets(
+        '3.4: DetailsTab displays calculated ratio and handles goal setting',
+        (tester) async {
       tester.view.physicalSize = const Size(1200, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -581,7 +621,8 @@ void main() {
   // Section 4: SearchService Multi-Stage Parser Adversarial Hardening
   // =========================================================================
   group('Tier 5 - Section 4: SearchService Multi-Stage Parser Hardening', () {
-    test('4.1: Deep nested JSON API formats with info_hash hex auto-conversion', () {
+    test('4.1: Deep nested JSON API formats with info_hash hex auto-conversion',
+        () {
       final service = SearchService.instance;
       const rawJson = '''
       {
@@ -610,7 +651,10 @@ void main() {
       expect(results.length, 2);
 
       expect(results[0].title, 'Ubuntu.Linux.24.04.LTS.Desktop');
-      expect(results[0].magnetLink, contains('4a5c6d7e8f901234567890abcdef1234567890ab'));
+      expect(
+        results[0].magnetLink,
+        contains('4a5c6d7e8f901234567890abcdef1234567890ab'),
+      );
       expect(results[0].size, 5368709120);
       expect(results[0].seeders, 1250);
       expect(results[0].leechers, 45);
@@ -621,7 +665,9 @@ void main() {
       expect(results[1].leechers, 12);
     });
 
-    test('4.2: Torznab XML parsing with enclosure length, magnet URLs, and attributes', () {
+    test(
+        '4.2: Torznab XML parsing with enclosure length, magnet URLs, and attributes',
+        () {
       final service = SearchService.instance;
       const xmlFeed = '''<?xml version="1.0" encoding="UTF-8"?>
       <rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed">
@@ -647,7 +693,9 @@ void main() {
       expect(results[0].leechers, 120);
     });
 
-    test('4.3: HTML Table parsing with formatted units (PiB, TiB, GiB, MiB, KiB) and numeric entities', () {
+    test(
+        '4.3: HTML Table parsing with formatted units (PiB, TiB, GiB, MiB, KiB) and numeric entities',
+        () {
       final service = SearchService.instance;
       const htmlTable = '''
       <table>
@@ -682,7 +730,9 @@ void main() {
       expect(results[1].leechers, 15);
     });
 
-    test('4.4: Fallback magnet link parsing with unanchored regex and surrounding context', () {
+    test(
+        '4.4: Fallback magnet link parsing with unanchored regex and surrounding context',
+        () {
       final service = SearchService.instance;
       const rawText = '''
       <div>
@@ -725,8 +775,11 @@ void main() {
   // =========================================================================
   // Section 5: MoovPriorityBooster Concurrency & Speed Limit Restoration
   // =========================================================================
-  group('Tier 5 - Section 5: MoovPriorityBooster Concurrency & Restoration', () {
-    test('5.1: Multiple concurrent boost sessions track activeCount and restore speed limit on last exit', () async {
+  group('Tier 5 - Section 5: MoovPriorityBooster Concurrency & Restoration',
+      () {
+    test(
+        '5.1: Multiple concurrent boost sessions track activeCount and restore speed limit on last exit',
+        () async {
       final fakeTorrent = E2ETier5FakeTorrent(
         id: 301,
         speedLimitDownEnabled: true,
@@ -760,7 +813,10 @@ void main() {
         file: fileA,
       );
 
-      expect(MoovPriorityBooster.activeSessionsForTest.containsKey(301), isTrue);
+      expect(
+        MoovPriorityBooster.activeSessionsForTest.containsKey(301),
+        isTrue,
+      );
       // Speed limit set to 0 (unlimited during buffer)
       expect(mockEngine.downloadSpeedLimits[301], equals(0));
 
@@ -770,13 +826,18 @@ void main() {
         file: fileB,
       );
 
-      expect(MoovPriorityBooster.activeSessionsForTest.containsKey(301), isTrue);
+      expect(
+        MoovPriorityBooster.activeSessionsForTest.containsKey(301),
+        isTrue,
+      );
 
       // Both files high priority set
       expect(mockEngine.sequentialDownloads[301], isTrue);
     });
 
-    test('5.2: Piece clamp safety when beginPiece < 0, endPiece > pieceCount, or single piece', () async {
+    test(
+        '5.2: Piece clamp safety when beginPiece < 0, endPiece > pieceCount, or single piece',
+        () async {
       final fakeTorrent = E2ETier5FakeTorrent(
         id: 302,
         pieceCount: 20,
@@ -799,7 +860,10 @@ void main() {
         file: invalidFile,
       );
 
-      expect(MoovPriorityBooster.activeSessionsForTest.containsKey(302), isFalse);
+      expect(
+        MoovPriorityBooster.activeSessionsForTest.containsKey(302),
+        isFalse,
+      );
 
       // Over-clamped endPiece (e.g. 50 > 20) -> clamped
       final clampedFile = torrent_file.File(
@@ -816,7 +880,10 @@ void main() {
         file: clampedFile,
       );
 
-      expect(MoovPriorityBooster.activeSessionsForTest.containsKey(302), isTrue);
+      expect(
+        MoovPriorityBooster.activeSessionsForTest.containsKey(302),
+        isTrue,
+      );
     });
   });
 
@@ -853,7 +920,9 @@ void main() {
       expect(savedPort, equals(51413));
     });
 
-    testWidgets('6.2: Invalid port (0 and 65536 and empty) displays validation error and does not save', (tester) async {
+    testWidgets(
+        '6.2: Invalid port (0 and 65536 and empty) displays validation error and does not save',
+        (tester) async {
       int? savedPort;
       await tester.pumpWidget(
         MaterialApp(
@@ -896,45 +965,114 @@ void main() {
   // Section 7: BlocklistService & SSRF IP Scope Hardening
   // =========================================================================
   group('Tier 5 - Section 7: BlocklistService & SSRF IP Scope Hardening', () {
-    test('7.1: Strict classification of RFC 1918, Loopback, CGNAT, Documentation, and IPv6 ranges', () {
+    test(
+        '7.1: Strict classification of RFC 1918, Loopback, CGNAT, Documentation, and IPv6 ranges',
+        () {
       // RFC 1918 Private IPv4
-      expect(IpAddressScope.classify(InternetAddress('10.0.0.1')), AddressScope.private);
-      expect(IpAddressScope.classify(InternetAddress('172.16.0.1')), AddressScope.private);
-      expect(IpAddressScope.classify(InternetAddress('172.31.255.255')), AddressScope.private);
-      expect(IpAddressScope.classify(InternetAddress('192.168.1.1')), AddressScope.private);
+      expect(
+        IpAddressScope.classify(InternetAddress('10.0.0.1')),
+        AddressScope.private,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('172.16.0.1')),
+        AddressScope.private,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('172.31.255.255')),
+        AddressScope.private,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('192.168.1.1')),
+        AddressScope.private,
+      );
 
       // Loopback IPv4 & IPv6
-      expect(IpAddressScope.classify(InternetAddress('127.0.0.1')), AddressScope.loopback);
-      expect(IpAddressScope.classify(InternetAddress('127.255.255.254')), AddressScope.loopback);
-      expect(IpAddressScope.classify(InternetAddress('::1')), AddressScope.loopback);
+      expect(
+        IpAddressScope.classify(InternetAddress('127.0.0.1')),
+        AddressScope.loopback,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('127.255.255.254')),
+        AddressScope.loopback,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('::1')),
+        AddressScope.loopback,
+      );
 
       // Link-Local IPv4 & IPv6
-      expect(IpAddressScope.classify(InternetAddress('169.254.1.1')), AddressScope.linkLocal);
-      expect(IpAddressScope.classify(InternetAddress('fe80::1')), AddressScope.linkLocal);
+      expect(
+        IpAddressScope.classify(InternetAddress('169.254.1.1')),
+        AddressScope.linkLocal,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('fe80::1')),
+        AddressScope.linkLocal,
+      );
 
       // CGNAT (100.64.0.0/10)
-      expect(IpAddressScope.classify(InternetAddress('100.64.0.1')), AddressScope.cgnat);
-      expect(IpAddressScope.classify(InternetAddress('100.127.255.255')), AddressScope.cgnat);
+      expect(
+        IpAddressScope.classify(InternetAddress('100.64.0.1')),
+        AddressScope.cgnat,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('100.127.255.255')),
+        AddressScope.cgnat,
+      );
 
       // Documentation IPv4 & IPv6
-      expect(IpAddressScope.classify(InternetAddress('198.51.100.1')), AddressScope.documentation);
-      expect(IpAddressScope.classify(InternetAddress('203.0.113.1')), AddressScope.documentation);
-      expect(IpAddressScope.classify(InternetAddress('2001:db8::1')), AddressScope.documentation);
+      expect(
+        IpAddressScope.classify(InternetAddress('198.51.100.1')),
+        AddressScope.documentation,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('203.0.113.1')),
+        AddressScope.documentation,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('2001:db8::1')),
+        AddressScope.documentation,
+      );
 
       // Unique Local IPv6 (fc00::/7)
-      expect(IpAddressScope.classify(InternetAddress('fc00::1')), AddressScope.uniqueLocal);
-      expect(IpAddressScope.classify(InternetAddress('fd12:3456:789a::1')), AddressScope.uniqueLocal);
+      expect(
+        IpAddressScope.classify(InternetAddress('fc00::1')),
+        AddressScope.uniqueLocal,
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('fd12:3456:789a::1')),
+        AddressScope.uniqueLocal,
+      );
 
       // Public Global Routable IPs
-      expect(IpAddressScope.isPubliclyRoutable(InternetAddress('8.8.8.8')), isTrue);
-      expect(IpAddressScope.isPubliclyRoutable(InternetAddress('1.1.1.1')), isTrue);
-      expect(IpAddressScope.isPubliclyRoutable(InternetAddress('2607:f8b0:4005:805::200e')), isTrue);
+      expect(
+        IpAddressScope.isPubliclyRoutable(InternetAddress('8.8.8.8')),
+        isTrue,
+      );
+      expect(
+        IpAddressScope.isPubliclyRoutable(InternetAddress('1.1.1.1')),
+        isTrue,
+      );
+      expect(
+        IpAddressScope.isPubliclyRoutable(
+          InternetAddress('2607:f8b0:4005:805::200e'),
+        ),
+        isTrue,
+      );
     });
 
-    test('7.2: Sync host rejection of localhost, .local, and malformed IPv4 variants', () {
+    test(
+        '7.2: Sync host rejection of localhost, .local, and malformed IPv4 variants',
+        () {
       expect(IpAddressScope.isPubliclyRoutableHostSync('localhost'), isFalse);
-      expect(IpAddressScope.isPubliclyRoutableHostSync('app.localhost'), isFalse);
-      expect(IpAddressScope.isPubliclyRoutableHostSync('device.local'), isFalse);
+      expect(
+        IpAddressScope.isPubliclyRoutableHostSync('app.localhost'),
+        isFalse,
+      );
+      expect(
+        IpAddressScope.isPubliclyRoutableHostSync('device.local'),
+        isFalse,
+      );
       expect(IpAddressScope.isPubliclyRoutableHostSync('127.0.0.1.'), isFalse);
       expect(IpAddressScope.isPubliclyRoutableHostSync('0177.0.0.1'), isFalse);
       expect(IpAddressScope.isPubliclyRoutableHostSync('127.1'), isFalse);
@@ -942,11 +1080,21 @@ void main() {
       expect(IpAddressScope.isPubliclyRoutableHostSync('256.0.0.1'), isFalse);
 
       // Legitimate public domain names return true synchronously (deferred to DNS)
-      expect(IpAddressScope.isPubliclyRoutableHostSync('raw.githubusercontent.com'), isTrue);
-      expect(IpAddressScope.isPubliclyRoutableHostSync('tracker.opentrackr.org'), isTrue);
+      expect(
+        IpAddressScope.isPubliclyRoutableHostSync(
+          'raw.githubusercontent.com',
+        ),
+        isTrue,
+      );
+      expect(
+        IpAddressScope.isPubliclyRoutableHostSync('tracker.opentrackr.org'),
+        isTrue,
+      );
     });
 
-    test('7.3: BlocklistService URL validation and update lifecycle with mock resolver', () async {
+    test(
+        '7.3: BlocklistService URL validation and update lifecycle with mock resolver',
+        () async {
       final service = BlocklistService.instance;
       await service.load();
 
@@ -991,7 +1139,8 @@ void main() {
   // Section 8: AutoExtractService & Zip-Slip Traversal Defenses Hardening
   // =========================================================================
   group('Tier 5 - Section 8: AutoExtractService & Zip-Slip Defenses', () {
-    test('8.1: Zip-slip directory traversal prevention for deep relative paths', () async {
+    test('8.1: Zip-slip directory traversal prevention for deep relative paths',
+        () async {
       final service = AutoExtractService.instance;
       service.setAutoExtractEnabled(true);
       service.setDestinationFolder(tempDir.path);
@@ -1006,7 +1155,8 @@ void main() {
       );
 
       final zipData = ZipEncoder().encode(archive);
-      final zipFile = File(p.join(tempDir.path, 'traversal_test.zip'))..writeAsBytesSync(zipData);
+      final zipFile = File(p.join(tempDir.path, 'traversal_test.zip'))
+        ..writeAsBytesSync(zipData);
 
       await service.handleTorrentCompletion('traversal_test', zipFile.path);
 
@@ -1022,15 +1172,19 @@ void main() {
       expect(escapedFile.existsSync(), isFalse);
     });
 
-    test('8.2: Standalone .gz archive decompression isolate handling and error recovery', () async {
+    test(
+        '8.2: Standalone .gz archive decompression isolate handling and error recovery',
+        () async {
       final service = AutoExtractService.instance;
       service.setAutoExtractEnabled(true);
       service.setDestinationFolder(tempDir.path);
 
       // Create a standalone .gz file
-      final rawData = utf8.encode('Decompressed content from standalone gzip archive stream.');
+      final rawData = utf8
+          .encode('Decompressed content from standalone gzip archive stream.');
       final gzipped = GZipCodec().encode(rawData);
-      final gzFile = File(p.join(tempDir.path, 'dataset.csv.gz'))..writeAsBytesSync(gzipped);
+      final gzFile = File(p.join(tempDir.path, 'dataset.csv.gz'))
+        ..writeAsBytesSync(gzipped);
 
       await service.handleTorrentCompletion('dataset_archive', gzFile.path);
 
@@ -1039,10 +1193,15 @@ void main() {
 
       final outFile = File(p.join(targetFolder.path, 'dataset.csv'));
       expect(outFile.existsSync(), isTrue);
-      expect(outFile.readAsStringSync(), 'Decompressed content from standalone gzip archive stream.');
+      expect(
+        outFile.readAsStringSync(),
+        'Decompressed content from standalone gzip archive stream.',
+      );
     });
 
-    test('8.3: Torrent name with directory traversal and backslashes is safely sanitized', () async {
+    test(
+        '8.3: Torrent name with directory traversal and backslashes is safely sanitized',
+        () async {
       final service = AutoExtractService.instance;
       service.setAutoExtractEnabled(true);
       service.setDestinationFolder(tempDir.path);
@@ -1052,7 +1211,8 @@ void main() {
         ArchiveFile('file.txt', 9, utf8.encode('some data')),
       );
       final zipData = ZipEncoder().encode(archive);
-      final zipFile = File(p.join(tempDir.path, 'safe.zip'))..writeAsBytesSync(zipData);
+      final zipFile = File(p.join(tempDir.path, 'safe.zip'))
+        ..writeAsBytesSync(zipData);
 
       // Adversarial torrent names attempting escape
       await service.handleTorrentCompletion(
@@ -1061,11 +1221,14 @@ void main() {
       );
 
       // Must be sanitized to safe name without escaping destinationFolder
-      final filesOutside = tempDir.parent.listSync().where((f) => f.path.contains('outside_folder'));
+      final filesOutside = tempDir.parent
+          .listSync()
+          .where((f) => f.path.contains('outside_folder'));
       expect(filesOutside.isEmpty, isTrue);
     });
 
-    test('8.4: AutoExtractService when disabled performs zero disk extractions', () async {
+    test('8.4: AutoExtractService when disabled performs zero disk extractions',
+        () async {
       final service = AutoExtractService.instance;
       service.setAutoExtractEnabled(false);
       service.setDestinationFolder(tempDir.path);
@@ -1073,7 +1236,8 @@ void main() {
       final archive = Archive();
       archive.addFile(ArchiveFile('dummy.txt', 5, utf8.encode('hello')));
       final zipData = ZipEncoder().encode(archive);
-      final zipFile = File(p.join(tempDir.path, 'disabled_test.zip'))..writeAsBytesSync(zipData);
+      final zipFile = File(p.join(tempDir.path, 'disabled_test.zip'))
+        ..writeAsBytesSync(zipData);
 
       await service.handleTorrentCompletion('disabled_test', zipFile.path);
 

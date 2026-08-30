@@ -126,7 +126,9 @@ class Bencode {
 
     final rawInfoBytes = decoder.rawInfoBytes;
     if (rawInfoBytes == null || !root.containsKey('info')) {
-      throw const FormatException('Missing "info" dictionary in torrent metainfo');
+      throw const FormatException(
+        'Missing "info" dictionary in torrent metainfo',
+      );
     }
 
     final infoObj = root['info'];
@@ -173,7 +175,9 @@ class Bencode {
       // Multi-file mode
       final rawFiles = infoObj['files'];
       if (rawFiles is! List || rawFiles is Uint8List) {
-        throw const FormatException('Invalid "files" list in multi-file torrent');
+        throw const FormatException(
+          'Invalid "files" list in multi-file torrent',
+        );
       }
       for (final f in rawFiles) {
         if (f is! Map<String, dynamic>) {
@@ -184,13 +188,17 @@ class Bencode {
           throw const FormatException('Invalid file "length" in files entry');
         }
         final rawPathList = f['path'];
-        if (rawPathList is! List || rawPathList is Uint8List || rawPathList.isEmpty) {
+        if (rawPathList is! List ||
+            rawPathList is Uint8List ||
+            rawPathList.isEmpty) {
           throw const FormatException('Invalid or empty "path" in files entry');
         }
         final pathComponents = <String>[];
         for (final p in rawPathList) {
           if (p is! String && p is! Uint8List) {
-            throw const FormatException('Invalid path component in files entry');
+            throw const FormatException(
+              'Invalid path component in files entry',
+            );
           }
           final comp = _asString(p);
           if (comp.isEmpty) {
@@ -220,7 +228,8 @@ class Bencode {
         );
       }
       totalSize = length;
-      final md5 = infoObj['md5sum'] != null ? _asString(infoObj['md5sum']) : null;
+      final md5 =
+          infoObj['md5sum'] != null ? _asString(infoObj['md5sum']) : null;
       files.add(
         TorrentFileEntry(
           path: name,
@@ -484,14 +493,17 @@ class _BencodeDecoder {
     final endLen = _offset;
     _offset++; // skip ':'
 
-    final lenStr = ascii.decode(Uint8List.sublistView(_bytes, startLen, endLen));
+    final lenStr =
+        ascii.decode(Uint8List.sublistView(_bytes, startLen, endLen));
     if (lenStr.startsWith('0') && lenStr.length > 1) {
       throw FormatException('Invalid leading zero in string length: "$lenStr"');
     }
 
     final length = int.tryParse(lenStr);
     if (length == null || length < 0) {
-      throw FormatException('Invalid string length "$lenStr" at offset $startLen');
+      throw FormatException(
+        'Invalid string length "$lenStr" at offset $startLen',
+      );
     }
 
     if (length > _bytes.length - _offset) {
@@ -577,7 +589,9 @@ class _BencodeDecoder {
     }
 
     if (_offset >= _bytes.length) {
-      throw const FormatException('Unterminated dictionary: missing "e" delimiter');
+      throw const FormatException(
+        'Unterminated dictionary: missing "e" delimiter',
+      );
     }
     _offset++; // skip 'e'
     _depth--;

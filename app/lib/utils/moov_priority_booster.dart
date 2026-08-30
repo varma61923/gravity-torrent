@@ -94,7 +94,9 @@ class MoovPriorityBooster {
           );
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('MoovPriorityBooster: failed to disable speed limit: $e');
+            debugPrint(
+              'MoovPriorityBooster: failed to disable speed limit: $e',
+            );
           }
         }
       }

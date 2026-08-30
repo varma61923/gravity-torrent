@@ -48,7 +48,8 @@ class CrossModuleMockEngine implements Engine {
     int? downloadLimit,
     int? uploadLimit,
   }) async {
-    callLog.add('setTorrentSpeedLimit($id, dl: $downloadLimit, ul: $uploadLimit)');
+    callLog
+        .add('setTorrentSpeedLimit($id, dl: $downloadLimit, ul: $uploadLimit)');
   }
 
   @override
@@ -131,13 +132,14 @@ void main() {
   // VECTOR 1: BENCODE & TORRENT METAINFO PRE-INSPECTION
   // =========================================================================
   group('Vector 1 — Bencode & Torrent Metainfo Pre-Inspection', () {
-    test('BEP 0003 raw UTF-8 byte key ordering in dictionary serialization', () {
+    test('BEP 0003 raw UTF-8 byte key ordering in dictionary serialization',
+        () {
       final map = <String, dynamic>{
         'z': 1,
         'a': 2,
         'ä': 3, // UTF-8: 0xC3 0xA4 (must sort after 'z' 0x7A in raw bytes)
         'A': 4, // ASCII: 0x41 (must sort before 'a' 0x61)
-        '': 5,  // Empty string: length 0 (must sort first)
+        '': 5, // Empty string: length 0 (must sort first)
         'aa': 6,
       };
 
@@ -152,14 +154,21 @@ void main() {
       expect(raw, equals('d0:i5e1:Ai4e1:ai2e2:aai6e1:zi1e2:äi3ee'));
     });
 
-    test('64-bit integer limits, boundary conditions, and overflow rejection', () {
+    test('64-bit integer limits, boundary conditions, and overflow rejection',
+        () {
       // 1. Exact int64 positive max (9223372036854775807)
       final maxIntBytes = utf8.encode('i9223372036854775807e');
-      expect(Bencode.decode(Uint8List.fromList(maxIntBytes)), equals(9223372036854775807));
+      expect(
+        Bencode.decode(Uint8List.fromList(maxIntBytes)),
+        equals(9223372036854775807),
+      );
 
       // 2. Exact int64 negative max (-9223372036854775808)
       final minIntBytes = utf8.encode('i-9223372036854775808e');
-      expect(Bencode.decode(Uint8List.fromList(minIntBytes)), equals(-9223372036854775808));
+      expect(
+        Bencode.decode(Uint8List.fromList(minIntBytes)),
+        equals(-9223372036854775808),
+      );
 
       // 3. Overflow beyond 64-bit bounds throws FormatException
       final overflowInt = utf8.encode('i9223372036854775808e');
@@ -177,16 +186,16 @@ void main() {
 
       // 5. Canonical BEP 0003 integer validation rules
       final invalidIntegers = [
-        'i-0e',        // Negative zero forbidden
-        'i03e',        // Leading zero forbidden
-        'i-05e',       // Negative leading zero forbidden
-        'i+42e',       // Positive sign forbidden
-        'ie',          // Empty integer forbidden
-        'i-e',         // Minus sign alone forbidden
-        'i 42e',       // Leading whitespace forbidden
-        'i42 e',       // Trailing whitespace forbidden
-        'i\t42e',      // Tab character forbidden
-        'i\n42e',      // Newline forbidden
+        'i-0e', // Negative zero forbidden
+        'i03e', // Leading zero forbidden
+        'i-05e', // Negative leading zero forbidden
+        'i+42e', // Positive sign forbidden
+        'ie', // Empty integer forbidden
+        'i-e', // Minus sign alone forbidden
+        'i 42e', // Leading whitespace forbidden
+        'i42 e', // Trailing whitespace forbidden
+        'i\t42e', // Tab character forbidden
+        'i\n42e', // Newline forbidden
       ];
 
       for (final invalid in invalidIntegers) {
@@ -198,7 +207,9 @@ void main() {
       }
     });
 
-    test('Recursion depth defense: exactly 512 passes, 513 throws FormatException', () {
+    test(
+        'Recursion depth defense: exactly 512 passes, 513 throws FormatException',
+        () {
       // 1. Exactly 512 nested lists -> Success
       final buffer512 = StringBuffer();
       for (var i = 0; i < 512; i++) {
@@ -234,8 +245,10 @@ void main() {
       );
     });
 
-    test('SHA-1 infoHash calculation from verbatim raw info dictionary slice', () {
-      final piecesBytes = Uint8List.fromList(List.generate(40, (i) => (i * 7) % 256));
+    test('SHA-1 infoHash calculation from verbatim raw info dictionary slice',
+        () {
+      final piecesBytes =
+          Uint8List.fromList(List.generate(40, (i) => (i * 7) % 256));
 
       final infoMap = <String, dynamic>{
         'length': 1048576,
@@ -256,14 +269,21 @@ void main() {
       final metadata = Bencode.decodeTorrent(rawTorrentBytes);
 
       final expectedDigest = sha1.convert(infoSlice);
-      expect(metadata.infoHash, equals(Uint8List.fromList(expectedDigest.bytes)));
-      expect(metadata.infoHashHex, equals(expectedDigest.toString().toLowerCase()));
+      expect(
+        metadata.infoHash,
+        equals(Uint8List.fromList(expectedDigest.bytes)),
+      );
+      expect(
+        metadata.infoHashHex,
+        equals(expectedDigest.toString().toLowerCase()),
+      );
       expect(metadata.pieceCount, equals(2));
       expect(metadata.totalSize, equals(1048576));
       expect(metadata.name, equals('sample.file'));
     });
 
-    test('Single-file and multi-file predictedSize and hierarchy verification', () {
+    test('Single-file and multi-file predictedSize and hierarchy verification',
+        () {
       final pieces20 = Uint8List(20);
 
       // 1. Single-file metainfo
@@ -292,9 +312,18 @@ void main() {
           'piece length': 524288,
           'pieces': pieces20,
           'files': [
-            {'length': 1000000, 'path': ['Track01.flac']},
-            {'length': 2500000, 'path': ['Subdir', 'Track02.flac']},
-            {'length': 1500000, 'path': ['Art', 'cover.jpg']},
+            {
+              'length': 1000000,
+              'path': ['Track01.flac'],
+            },
+            {
+              'length': 2500000,
+              'path': ['Subdir', 'Track02.flac'],
+            },
+            {
+              'length': 1500000,
+              'path': ['Art', 'cover.jpg'],
+            },
           ],
         },
       });
@@ -314,7 +343,10 @@ void main() {
           'piece length': 524288,
           'pieces': pieces20,
           'files': [
-            {'length': 100, 'path': Uint8List.fromList(utf8.encode('not_a_list'))},
+            {
+              'length': 100,
+              'path': Uint8List.fromList(utf8.encode('not_a_list')),
+            },
           ],
         },
       });
@@ -329,7 +361,9 @@ void main() {
   // VECTOR 2: TRANSMISSION TORRENT MODEL SCALE (>1,000,000 PIECES)
   // =========================================================================
   group('Vector 2 — Transmission Torrent Model Scale & Bitfield Unpacking', () {
-    test('Handles 1,000,000, 2,000,000 and 10,000,000 piece swarms without clamping', () {
+    test(
+        'Handles 1,000,000, 2,000,000 and 10,000,000 piece swarms without clamping',
+        () {
       // 1. Exactly 1,000,000 pieces
       final model1M = TransmissionTorrentModel.fromJson({
         'id': 101,
@@ -361,7 +395,9 @@ void main() {
       expect(model10M.pieces.length, equals(10000000));
     });
 
-    test('convertBitfieldToBoolList bit-exact unpacking with partial and overlong buffers', () {
+    test(
+        'convertBitfieldToBoolList bit-exact unpacking with partial and overlong buffers',
+        () {
       // 1. Partial trailing bits: 11 pieces with bytes [0b10101010, 0b11100000] = [170, 224]
       // Byte 0 (8 bits): 1, 0, 1, 0, 1, 0, 1, 0
       // Byte 1 (3 bits needed): 1, 1, 1 (remaining 5 bits ignored)
@@ -372,8 +408,17 @@ void main() {
       expect(
         bits,
         equals([
-          true, false, true, false, true, false, true, false,
-          true, true, true,
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+          true,
+          true,
+          true,
         ]),
       );
 
@@ -394,7 +439,9 @@ void main() {
       expect(convertBitfieldToBoolList(Uint8List(0), 0), isEmpty);
     });
 
-    test('Base64 decoded bitfield parsing inside TransmissionTorrentModel.fromJson', () {
+    test(
+        'Base64 decoded bitfield parsing inside TransmissionTorrentModel.fromJson',
+        () {
       // Base64 of [0b11000000, 0b00000011] -> [192, 3] -> Base64: 'wAM='
       final base64String = base64Encode(Uint8List.fromList([192, 3]));
       final model = TransmissionTorrentModel.fromJson({
@@ -417,40 +464,101 @@ void main() {
   // VECTOR 3: BLOCKLIST SERVICE & SSRF DEFENSE
   // =========================================================================
   group('Vector 3 — Blocklist Service & SSRF Defense', () {
-    test('Offline IP classification covers all private, CGNAT, loopback, link-local, and IPv6 ranges', () {
+    test(
+        'Offline IP classification covers all private, CGNAT, loopback, link-local, and IPv6 ranges',
+        () {
       // Private (RFC 1918)
-      expect(IpAddressScope.classify(InternetAddress('10.0.0.1')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('10.255.255.255')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('172.16.0.1')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('172.31.255.254')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('192.168.0.1')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('192.168.254.254')), equals(AddressScope.private));
+      expect(
+        IpAddressScope.classify(InternetAddress('10.0.0.1')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('10.255.255.255')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('172.16.0.1')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('172.31.255.254')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('192.168.0.1')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('192.168.254.254')),
+        equals(AddressScope.private),
+      );
 
       // CGNAT (RFC 6598: 100.64.0.0/10)
-      expect(IpAddressScope.classify(InternetAddress('100.64.0.1')), equals(AddressScope.cgnat));
-      expect(IpAddressScope.classify(InternetAddress('100.127.255.254')), equals(AddressScope.cgnat));
+      expect(
+        IpAddressScope.classify(InternetAddress('100.64.0.1')),
+        equals(AddressScope.cgnat),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('100.127.255.254')),
+        equals(AddressScope.cgnat),
+      );
 
       // Loopback (127.0.0.0/8 and ::1)
-      expect(IpAddressScope.classify(InternetAddress('127.0.0.1')), equals(AddressScope.loopback));
-      expect(IpAddressScope.classify(InternetAddress('127.100.50.1')), equals(AddressScope.loopback));
-      expect(IpAddressScope.classify(InternetAddress('::1')), equals(AddressScope.loopback));
+      expect(
+        IpAddressScope.classify(InternetAddress('127.0.0.1')),
+        equals(AddressScope.loopback),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('127.100.50.1')),
+        equals(AddressScope.loopback),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('::1')),
+        equals(AddressScope.loopback),
+      );
 
       // Link-Local (169.254.0.0/16 and fe80::/10)
-      expect(IpAddressScope.classify(InternetAddress('169.254.1.1')), equals(AddressScope.linkLocal));
-      expect(IpAddressScope.classify(InternetAddress('fe80::1')), equals(AddressScope.linkLocal));
+      expect(
+        IpAddressScope.classify(InternetAddress('169.254.1.1')),
+        equals(AddressScope.linkLocal),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('fe80::1')),
+        equals(AddressScope.linkLocal),
+      );
 
       // Unique Local IPv6 ULA (fc00::/7 / fd00::/8)
-      expect(IpAddressScope.classify(InternetAddress('fc00::1')), equals(AddressScope.uniqueLocal));
-      expect(IpAddressScope.classify(InternetAddress('fd12:3456:789a::1')), equals(AddressScope.uniqueLocal));
+      expect(
+        IpAddressScope.classify(InternetAddress('fc00::1')),
+        equals(AddressScope.uniqueLocal),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('fd12:3456:789a::1')),
+        equals(AddressScope.uniqueLocal),
+      );
 
       // Public Global Addresses
-      expect(IpAddressScope.classify(InternetAddress('8.8.8.8')), equals(AddressScope.global));
-      expect(IpAddressScope.classify(InternetAddress('1.1.1.1')), equals(AddressScope.global));
-      expect(IpAddressScope.classify(InternetAddress('2606:4700:4700::1111')), equals(AddressScope.global));
-      expect(IpAddressScope.classify(InternetAddress('2001:4860:4860::8888')), equals(AddressScope.global));
+      expect(
+        IpAddressScope.classify(InternetAddress('8.8.8.8')),
+        equals(AddressScope.global),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('1.1.1.1')),
+        equals(AddressScope.global),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('2606:4700:4700::1111')),
+        equals(AddressScope.global),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('2001:4860:4860::8888')),
+        equals(AddressScope.global),
+      );
     });
 
-    test('BlocklistService.isValidBlocklistUrl rejects SSRF vectors with mock DNS lookup', () async {
+    test(
+        'BlocklistService.isValidBlocklistUrl rejects SSRF vectors with mock DNS lookup',
+        () async {
       Future<List<InternetAddress>> mockLookup(String host) async {
         if (host == 'localhost' || host == 'local.dev') {
           return [InternetAddress('127.0.0.1')];
@@ -545,12 +653,20 @@ void main() {
         lookup: timingOutLookup,
       );
 
-      expect(result, isFalse, reason: 'DNS timeout must fail closed to prevent SSRF');
+      expect(
+        result,
+        isFalse,
+        reason: 'DNS timeout must fail closed to prevent SSRF',
+      );
     });
 
-    test('Offline SocketException defers to fetch time (returns true for public hostnames)', () async {
+    test(
+        'Offline SocketException defers to fetch time (returns true for public hostnames)',
+        () async {
       Future<List<InternetAddress>> offlineLookup(String host) async {
-        throw const SocketException('No address associated with hostname (offline)');
+        throw const SocketException(
+          'No address associated with hostname (offline)',
+        );
       }
 
       final result = await IpAddressScope.isPubliclyRoutableHost(
@@ -558,7 +674,11 @@ void main() {
         lookup: offlineLookup,
       );
 
-      expect(result, isTrue, reason: 'Offline SocketException should defer to runtime fetch');
+      expect(
+        result,
+        isTrue,
+        reason: 'Offline SocketException should defer to runtime fetch',
+      );
     });
   });
 
@@ -579,13 +699,17 @@ void main() {
   }
 ]
 ''';
-      final results1 = SearchService.instance.parseResultsForTesting('Apibay', apibayJson);
+      final results1 =
+          SearchService.instance.parseResultsForTesting('Apibay', apibayJson);
       expect(results1.length, equals(1));
       expect(results1.first.title, equals('Arch Linux 2026 ISO'));
       expect(results1.first.size, equals(950245000));
       expect(results1.first.seeders, equals(3200));
       expect(results1.first.leechers, equals(150));
-      expect(results1.first.magnetLink, contains('e1f2a3b4c5d6e1f2a3b4c5d6e1f2a3b4c5d6e1f2'));
+      expect(
+        results1.first.magnetLink,
+        contains('e1f2a3b4c5d6e1f2a3b4c5d6e1f2a3b4c5d6e1f2'),
+      );
 
       // 2. Object wrapper with 'torrents' key
       const wrapperJson = '''
@@ -602,13 +726,17 @@ void main() {
   ]
 }
 ''';
-      final results2 = SearchService.instance.parseResultsForTesting('CustomAPI', wrapperJson);
+      final results2 = SearchService.instance
+          .parseResultsForTesting('CustomAPI', wrapperJson);
       expect(results2.length, equals(1));
       expect(results2.first.title, equals('Fedora Workstation 42'));
       expect(results2.first.size, equals(2147483648));
       expect(results2.first.seeders, equals(800));
       expect(results2.first.leechers, equals(20));
-      expect(results2.first.magnetLink, contains('1234567890123456789012345678901234567890'));
+      expect(
+        results2.first.magnetLink,
+        contains('1234567890123456789012345678901234567890'),
+      );
     });
 
     test('Waterfall Stage 2: XML / Torznab RSS parsing', () {
@@ -628,17 +756,25 @@ void main() {
   </channel>
 </rss>
 ''';
-      final results = SearchService.instance.parseResultsForTesting('Torznab', torznabRss);
+      final results =
+          SearchService.instance.parseResultsForTesting('Torznab', torznabRss);
       expect(results.length, equals(1));
       expect(results.first.title, equals('OpenSUSE Tumbleweed'));
       expect(results.first.size, equals(4500000000));
       expect(results.first.seeders, equals(512));
       expect(results.first.leechers, equals(64));
-      expect(results.first.torrentUrl, equals('https://indexer.com/dl/opensuse.torrent'));
-      expect(results.first.magnetLink, contains('abcdef1234567890abcdef1234567890abcdef12'));
+      expect(
+        results.first.torrentUrl,
+        equals('https://indexer.com/dl/opensuse.torrent'),
+      );
+      expect(
+        results.first.magnetLink,
+        contains('abcdef1234567890abcdef1234567890abcdef12'),
+      );
     });
 
-    test('Waterfall Stage 3 & 4: HTML Tables, Cards, and Entity Unescaping', () {
+    test('Waterfall Stage 3 & 4: HTML Tables, Cards, and Entity Unescaping',
+        () {
       const htmlTable = '''
 <table>
   <tr>
@@ -652,7 +788,8 @@ void main() {
   </tr>
 </table>
 ''';
-      final results = SearchService.instance.parseResultsForTesting('TPB', htmlTable);
+      final results =
+          SearchService.instance.parseResultsForTesting('TPB', htmlTable);
       expect(results.length, equals(1));
       expect(results.first.title, equals('Test & Movie "2026" \'Special\' A'));
       expect(results.first.seeders, equals(1234));
@@ -669,10 +806,15 @@ void main() {
           '${'Repeated Unclosed Text ' * 200}'
           '${'</div>' * 500}';
 
-      final results = SearchService.instance.parseResultsForTesting('Adversarial', adversarialHtml);
+      final results = SearchService.instance
+          .parseResultsForTesting('Adversarial', adversarialHtml);
       stopwatch.stop();
 
-      expect(stopwatch.elapsedMilliseconds, lessThan(300), reason: 'ReDoS attack must parse in < 300ms');
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(300),
+        reason: 'ReDoS attack must parse in < 300ms',
+      );
       expect(results.isNotEmpty, isTrue);
     });
   });
@@ -725,7 +867,9 @@ void main() {
       expect(SeedRatioService.calculateRatio(zeroTorrent), equals(0.0));
     });
 
-    test('checkAndStop strictly pauses seeding torrents exceeding personal goal', () async {
+    test(
+        'checkAndStop strictly pauses seeding torrents exceeding personal goal',
+        () async {
       final service = SeedRatioService.instance;
       await service.setGoal(10, 1.5);
       await service.setGoal(20, 2.0);
@@ -759,7 +903,10 @@ void main() {
       expect(mockEngine.pausedIds, equals([10]));
     });
 
-    Widget buildDialog({required int currentValue, required void Function(int) onSave}) {
+    Widget buildDialog({
+      required int currentValue,
+      required void Function(int) onSave,
+    }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -778,9 +925,12 @@ void main() {
       expect(find.text('51413'), findsOneWidget);
     });
 
-    testWidgets('PeerPortDialog accepts valid lower bound port 1', (tester) async {
+    testWidgets('PeerPortDialog accepts valid lower bound port 1',
+        (tester) async {
       int? saved;
-      await tester.pumpWidget(buildDialog(currentValue: 51413, onSave: (v) => saved = v));
+      await tester.pumpWidget(
+        buildDialog(currentValue: 51413, onSave: (v) => saved = v),
+      );
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), '1');
       await tester.tap(find.text('Save'));
@@ -788,9 +938,12 @@ void main() {
       expect(saved, equals(1));
     });
 
-    testWidgets('PeerPortDialog accepts valid upper bound port 65535', (tester) async {
+    testWidgets('PeerPortDialog accepts valid upper bound port 65535',
+        (tester) async {
       int? saved;
-      await tester.pumpWidget(buildDialog(currentValue: 51413, onSave: (v) => saved = v));
+      await tester.pumpWidget(
+        buildDialog(currentValue: 51413, onSave: (v) => saved = v),
+      );
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), '65535');
       await tester.tap(find.text('Save'));
@@ -798,9 +951,12 @@ void main() {
       expect(saved, equals(65535));
     });
 
-    testWidgets('PeerPortDialog rejects out-of-bounds port 65536', (tester) async {
+    testWidgets('PeerPortDialog rejects out-of-bounds port 65536',
+        (tester) async {
       int? saved;
-      await tester.pumpWidget(buildDialog(currentValue: 51413, onSave: (v) => saved = v));
+      await tester.pumpWidget(
+        buildDialog(currentValue: 51413, onSave: (v) => saved = v),
+      );
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), '65536');
       await tester.tap(find.text('Save'));
@@ -811,7 +967,9 @@ void main() {
 
     testWidgets('PeerPortDialog rejects port 0', (tester) async {
       int? saved;
-      await tester.pumpWidget(buildDialog(currentValue: 51413, onSave: (v) => saved = v));
+      await tester.pumpWidget(
+        buildDialog(currentValue: 51413, onSave: (v) => saved = v),
+      );
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), '0');
       await tester.tap(find.text('Save'));

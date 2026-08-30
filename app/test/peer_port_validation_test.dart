@@ -22,41 +22,53 @@ void main() {
     }
 
     testWidgets('displays initial valid port value', (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (_) {},
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (_) {},
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('6881'), findsOneWidget);
     });
 
-    testWidgets('defaults to 51413 when initial currentValue is 0 or non-positive', (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 0,
-        onSave: (_) {},
-      ),);
+    testWidgets(
+        'defaults to 51413 when initial currentValue is 0 or non-positive',
+        (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 0,
+          onSave: (_) {},
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('51413'), findsOneWidget);
     });
 
-    testWidgets('defaults to 51413 when initial currentValue is negative', (tester) async {
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: -1,
-        onSave: (_) {},
-      ),);
+    testWidgets('defaults to 51413 when initial currentValue is negative',
+        (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: -1,
+          onSave: (_) {},
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('51413'), findsOneWidget);
     });
 
-    testWidgets('rejects empty input with emptyNumber validation error', (tester) async {
+    testWidgets('rejects empty input with emptyNumber validation error',
+        (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -68,12 +80,15 @@ void main() {
       expect(find.text('Please enter a number'), findsOneWidget);
     });
 
-    testWidgets('rejects port 0 (< 1) with invalidNumber validation error', (tester) async {
+    testWidgets('rejects port 0 (< 1) with invalidNumber validation error',
+        (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -85,12 +100,16 @@ void main() {
       expect(find.text('Please enter a valid number'), findsOneWidget);
     });
 
-    testWidgets('rejects port 65536 (> 65535) with invalidNumber validation error', (tester) async {
+    testWidgets(
+        'rejects port 65536 (> 65535) with invalidNumber validation error',
+        (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -104,10 +123,12 @@ void main() {
 
     testWidgets('rejects out-of-range port 70000 and 99999', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -128,10 +149,12 @@ void main() {
 
     testWidgets('accepts valid lower bound port 1', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -144,10 +167,12 @@ void main() {
 
     testWidgets('accepts valid upper bound port 65535', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -158,12 +183,15 @@ void main() {
       expect(savedPort, equals(65535));
     });
 
-    testWidgets('accepts standard peer port 51413 and saves correctly', (tester) async {
+    testWidgets('accepts standard peer port 51413 and saves correctly',
+        (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -176,10 +204,12 @@ void main() {
 
     testWidgets('cancels dialog without calling onSave', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildTestWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildTestWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Cancel'));

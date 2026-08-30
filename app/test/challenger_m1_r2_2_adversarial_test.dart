@@ -76,7 +76,8 @@ void main() {
           expect(
             () => Bencode.decode(Uint8List.fromList(ascii.encode(payload))),
             throwsA(isA<FormatException>()),
-            reason: 'Leading zero payload "$payload" must throw FormatException',
+            reason:
+                'Leading zero payload "$payload" must throw FormatException',
           );
         }
       });
@@ -370,11 +371,9 @@ void main() {
           Bencode.decode(Uint8List.fromList(ascii.encode('de'))),
           equals(<String, dynamic>{}),
         );
-        final dict =
-            Bencode.decode(
-                  Uint8List.fromList(ascii.encode('d3:cow3:moo4:spam4:eggse')),
-                )
-                as Map<String, dynamic>;
+        final dict = Bencode.decode(
+          Uint8List.fromList(ascii.encode('d3:cow3:moo4:spam4:eggse')),
+        ) as Map<String, dynamic>;
         expect(utf8.decode(dict['cow'] as Uint8List), equals('moo'));
         expect(utf8.decode(dict['spam'] as Uint8List), equals('eggs'));
       });

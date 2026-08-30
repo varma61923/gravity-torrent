@@ -374,7 +374,9 @@ class BackupService {
             final ok = await BlocklistService.isValidBlocklistUrl(value);
             if (!ok) {
               if (kDebugMode) {
-                debugPrint('BackupService: skipped unsafe blocklist URL $value');
+                debugPrint(
+                  'BackupService: skipped unsafe blocklist URL $value',
+                );
               }
               continue;
             }
@@ -588,12 +590,16 @@ class BackupService {
       final allowedRoots = <String>[];
       try {
         allowedRoots.add(
-          p.normalize(p.absolute((await getApplicationDocumentsDirectory()).path)),
+          p.normalize(
+            p.absolute((await getApplicationDocumentsDirectory()).path),
+          ),
         );
       } catch (_) {}
       try {
         allowedRoots.add(
-          p.normalize(p.absolute((await getApplicationSupportDirectory()).path)),
+          p.normalize(
+            p.absolute((await getApplicationSupportDirectory()).path),
+          ),
         );
       } catch (_) {}
       try {
@@ -603,7 +609,8 @@ class BackupService {
         }
       } catch (_) {}
       try {
-        allowedRoots.add(p.normalize(p.absolute((await getTemporaryDirectory()).path)));
+        allowedRoots
+            .add(p.normalize(p.absolute((await getTemporaryDirectory()).path)));
       } catch (_) {}
 
       for (final root in allowedRoots) {
@@ -615,9 +622,18 @@ class BackupService {
       }
       // Also allow any directory that already exists and is not a system root.
       // Reject obvious system paths.
-      const blockedPrefixes = ['/etc', '/bin', '/sbin', '/usr', '/system', '/data/data'];
+      const blockedPrefixes = [
+        '/etc',
+        '/bin',
+        '/sbin',
+        '/usr',
+        '/system',
+        '/data/data',
+      ];
       for (final blocked in blockedPrefixes) {
-        if (normalized == blocked || p.isWithin(blocked, normalized)) return null;
+        if (normalized == blocked || p.isWithin(blocked, normalized)) {
+          return null;
+        }
       }
       final dir = Directory(normalized);
       if (!dir.existsSync()) return null;

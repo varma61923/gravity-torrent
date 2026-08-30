@@ -129,7 +129,9 @@ void main() {
       expect(model.pieces[1999999], isFalse);
     });
 
-    test('handles invalid base64 bitfield string gracefully with large pieceCount', () {
+    test(
+        'handles invalid base64 bitfield string gracefully with large pieceCount',
+        () {
       const pieceCount = 1500000;
       final model = TransmissionTorrentModel.fromJson({
         'id': 9,
@@ -142,7 +144,9 @@ void main() {
       expect(model.pieces.every((p) => p == false), isTrue);
     });
 
-    test('verifies integration with hasLoadedPieces for piece indices > 1,000,000', () {
+    test(
+        'verifies integration with hasLoadedPieces for piece indices > 1,000,000',
+        () {
       const pieceCount = 2000000;
       const numBytes = (pieceCount + 7) ~/ 8;
       final bitfieldBytes = Uint8List(numBytes);

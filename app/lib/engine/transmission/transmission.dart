@@ -541,7 +541,8 @@ class TransmissionTorrent extends Torrent {
     } else if (priority < 0) {
       args = TorrentSetRequestArguments(ids: [id], priorityLow: pieceIndices);
     } else {
-      args = TorrentSetRequestArguments(ids: [id], priorityNormal: pieceIndices);
+      args =
+          TorrentSetRequestArguments(ids: [id], priorityNormal: pieceIndices);
     }
     final request = TorrentSetRequest(arguments: args);
     _expectSuccess(
@@ -1356,7 +1357,8 @@ class TransmissionEngine extends Engine {
     } else if (priority < 0) {
       args = TorrentSetRequestArguments(ids: [id], priorityLow: pieceIndices);
     } else {
-      args = TorrentSetRequestArguments(ids: [id], priorityNormal: pieceIndices);
+      args =
+          TorrentSetRequestArguments(ids: [id], priorityNormal: pieceIndices);
     }
     final request = TorrentSetRequest(arguments: args);
     _expectSuccess(

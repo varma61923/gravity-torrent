@@ -229,7 +229,9 @@ class SearchService {
   Future<void> addEngine(SearchEngine engine) async {
     await load();
     if (!await isValidEngineUrl(engine)) {
-      throw ArgumentError('Invalid or unsafe search engine URL: ${engine.baseUrl}');
+      throw ArgumentError(
+        'Invalid or unsafe search engine URL: ${engine.baseUrl}',
+      );
     }
     _engines.add(engine);
     await _saveEngines();
@@ -247,7 +249,9 @@ class SearchService {
     await load();
     if (index >= 0 && index < _engines.length) {
       if (!await isValidEngineUrl(engine)) {
-        throw ArgumentError('Invalid or unsafe search engine URL: ${engine.baseUrl}');
+        throw ArgumentError(
+          'Invalid or unsafe search engine URL: ${engine.baseUrl}',
+        );
       }
       _engines[index] = engine;
       await _saveEngines();
@@ -323,7 +327,9 @@ class SearchService {
       uri.host,
       lookup: hostLookupForTest,
     )) {
-      throw ArgumentError('Search engine host is not publicly routable: ${uri.host}');
+      throw ArgumentError(
+        'Search engine host is not publicly routable: ${uri.host}',
+      );
     }
 
     final response = await http.get(uri).timeout(
@@ -470,19 +476,15 @@ class SearchService {
       final seeders =
           _parseCount(map['seeders'] ?? map['seeds'] ?? map['seed']);
       final leechers = _parseCount(
-        map['leechers'] ??
-            map['leeches'] ??
-            map['peers'] ??
-            map['leech'],
+        map['leechers'] ?? map['leeches'] ?? map['peers'] ?? map['leech'],
       );
 
       results.add(
         SearchResult(
           title: title.isNotEmpty ? title : 'Torrent',
           magnetLink: magnet,
-          torrentUrl: (torrentUrl != null && torrentUrl.isNotEmpty)
-              ? torrentUrl
-              : null,
+          torrentUrl:
+              (torrentUrl != null && torrentUrl.isNotEmpty) ? torrentUrl : null,
           size: size,
           seeders: seeders,
           leechers: leechers,
@@ -586,8 +588,11 @@ class SearchService {
 
   List<SearchResult> _parseHtmlTableRows(String source, String html) {
     final results = <SearchResult>[];
-    final rowRegex =
-        RegExp(r'''<tr\b[^>]*>(.*?)</tr>''', caseSensitive: false, dotAll: true);
+    final rowRegex = RegExp(
+      r'''<tr\b[^>]*>(.*?)</tr>''',
+      caseSensitive: false,
+      dotAll: true,
+    );
     final rows = rowRegex.allMatches(html);
 
     for (final rowMatch in rows) {

@@ -33,7 +33,9 @@ void main() {
       expect(metadata.pieceCount, equals(10));
     });
 
-    test('accurately calculates predictedSize across multi-file torrent hierarchies', () {
+    test(
+        'accurately calculates predictedSize across multi-file torrent hierarchies',
+        () {
       final dummyPieces = Uint8List(20 * 2);
 
       final torrentDict = {
@@ -82,15 +84,27 @@ void main() {
       const torrentSize = 5000000000; // 5 GB
 
       // Free space is strictly less than predicted size -> Should trigger
-      expect(shouldTriggerLowStorageWarning(2000000000, torrentSize), isTrue); // 2 GB free < 5 GB
+      expect(
+        shouldTriggerLowStorageWarning(2000000000, torrentSize),
+        isTrue,
+      ); // 2 GB free < 5 GB
 
       // Free space is greater than predicted size -> Should not trigger
-      expect(shouldTriggerLowStorageWarning(10000000000, torrentSize), isFalse); // 10 GB free > 5 GB
+      expect(
+        shouldTriggerLowStorageWarning(10000000000, torrentSize),
+        isFalse,
+      ); // 10 GB free > 5 GB
 
       // Exact boundary tests
-      expect(shouldTriggerLowStorageWarning(torrentSize - 1, torrentSize), isTrue);
+      expect(
+        shouldTriggerLowStorageWarning(torrentSize - 1, torrentSize),
+        isTrue,
+      );
       expect(shouldTriggerLowStorageWarning(torrentSize, torrentSize), isFalse);
-      expect(shouldTriggerLowStorageWarning(torrentSize + 1, torrentSize), isFalse);
+      expect(
+        shouldTriggerLowStorageWarning(torrentSize + 1, torrentSize),
+        isFalse,
+      );
 
       // Unmeasured / zero free space -> Should bypass gracefully
       expect(shouldTriggerLowStorageWarning(0, torrentSize), isFalse);
@@ -104,7 +118,8 @@ void main() {
     test('validates corrupt and malformed payload handling', () {
       // 1. Truncated bencode stream
       expect(
-        () => Bencode.decodeTorrent(Uint8List.fromList(ascii.encode('d4:info'))),
+        () =>
+            Bencode.decodeTorrent(Uint8List.fromList(ascii.encode('d4:info'))),
         throwsA(isA<FormatException>()),
       );
 
@@ -147,7 +162,10 @@ void main() {
               'piece length': 16384,
               'pieces': Uint8List(20),
               'files': [
-                {'length': -100, 'path': ['bad.txt']},
+                {
+                  'length': -100,
+                  'path': ['bad.txt'],
+                },
               ],
             },
           }),
@@ -190,8 +208,14 @@ void main() {
       final rawInfoBytes = Bencode.encode(infoDict);
       final expectedDigest = sha1.convert(rawInfoBytes);
 
-      expect(metadata.infoHash, equals(Uint8List.fromList(expectedDigest.bytes)));
-      expect(metadata.infoHashHex, equals(expectedDigest.toString().toLowerCase()));
+      expect(
+        metadata.infoHash,
+        equals(Uint8List.fromList(expectedDigest.bytes)),
+      );
+      expect(
+        metadata.infoHashHex,
+        equals(expectedDigest.toString().toLowerCase()),
+      );
       expect(metadata.infoHashHex.length, equals(40));
     });
   });

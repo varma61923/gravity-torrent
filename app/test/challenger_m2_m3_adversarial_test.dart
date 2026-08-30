@@ -46,7 +46,8 @@ class AdversarialMockEngine implements Engine {
     int? downloadLimit,
     int? uploadLimit,
   }) async {
-    callLog.add('setTorrentSpeedLimit($id, dl: $downloadLimit, ul: $uploadLimit)');
+    callLog
+        .add('setTorrentSpeedLimit($id, dl: $downloadLimit, ul: $uploadLimit)');
   }
 
   @override
@@ -149,13 +150,16 @@ void main() {
       );
     }
 
-    testWidgets('rejects negative ports on input and falls back correctly on init',
+    testWidgets(
+        'rejects negative ports on input and falls back correctly on init',
         (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildPortWidget(
-        currentValue: -65535,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildPortWidget(
+          currentValue: -65535,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Initial value when currentValue <= 0 defaults to 51413
@@ -172,10 +176,12 @@ void main() {
 
     testWidgets('rejects alphabetic strings', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildPortWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildPortWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -187,10 +193,12 @@ void main() {
 
     testWidgets('rejects port 0', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildPortWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildPortWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -203,10 +211,12 @@ void main() {
 
     testWidgets('rejects port 65536', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildPortWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildPortWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -219,10 +229,12 @@ void main() {
 
     testWidgets('accepts lower bound port 1', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildPortWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildPortWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -234,10 +246,12 @@ void main() {
 
     testWidgets('accepts upper bound port 65535', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildPortWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildPortWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -250,10 +264,12 @@ void main() {
     testWidgets('rejects massive overflow integers and empty string',
         (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildPortWidget(
-        currentValue: 6881,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildPortWidget(
+          currentValue: 6881,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
       final textField = find.byType(TextFormField);
 
@@ -280,52 +296,82 @@ void main() {
     test('parses single line as 1 tier with 1 tracker', () {
       const input = 'http://tracker1.org/announce';
       final tiers = TorrentCreatorService.parseTrackerTiers(input);
-      expect(tiers, equals([['http://tracker1.org/announce']]));
+      expect(
+        tiers,
+        equals([
+          ['http://tracker1.org/announce'],
+        ]),
+      );
     });
 
     test('parses consecutive lines as belonging to the same tier', () {
-      const input = 'http://t1/announce\nhttp://t2/announce\nudp://t3:6969/announce';
+      const input =
+          'http://t1/announce\nhttp://t2/announce\nudp://t3:6969/announce';
       final tiers = TorrentCreatorService.parseTrackerTiers(input);
-      expect(tiers, equals([
-        ['http://t1/announce', 'http://t2/announce', 'udp://t3:6969/announce'],
-      ]),);
+      expect(
+        tiers,
+        equals([
+          [
+            'http://t1/announce',
+            'http://t2/announce',
+            'udp://t3:6969/announce',
+          ],
+        ]),
+      );
     });
 
     test('parses multiple tiers separated by blank lines', () {
-      const input = 'http://tier0-1\nhttp://tier0-2\n\nhttp://tier1-1\n\nudp://tier2-1';
+      const input =
+          'http://tier0-1\nhttp://tier0-2\n\nhttp://tier1-1\n\nudp://tier2-1';
       final tiers = TorrentCreatorService.parseTrackerTiers(input);
-      expect(tiers, equals([
-        ['http://tier0-1', 'http://tier0-2'],
-        ['http://tier1-1'],
-        ['udp://tier2-1'],
-      ]),);
+      expect(
+        tiers,
+        equals([
+          ['http://tier0-1', 'http://tier0-2'],
+          ['http://tier1-1'],
+          ['udp://tier2-1'],
+        ]),
+      );
     });
 
     test('handles CRLF vs LF and mixed newline formats', () {
-      const input = 'http://t1\r\nhttp://t2\r\n\r\nhttp://t3\nhttp://t4\r\n\nhttp://t5';
+      const input =
+          'http://t1\r\nhttp://t2\r\n\r\nhttp://t3\nhttp://t4\r\n\nhttp://t5';
       final tiers = TorrentCreatorService.parseTrackerTiers(input);
-      expect(tiers, equals([
-        ['http://t1', 'http://t2'],
-        ['http://t3', 'http://t4'],
-        ['http://t5'],
-      ]),);
+      expect(
+        tiers,
+        equals([
+          ['http://t1', 'http://t2'],
+          ['http://t3', 'http://t4'],
+          ['http://t5'],
+        ]),
+      );
     });
 
-    test('handles whitespace-only lines, tabs, and leading/trailing blank lines', () {
+    test(
+        'handles whitespace-only lines, tabs, and leading/trailing blank lines',
+        () {
       const input = '\n\t  \r\n   \nhttp://t1\n   \t   \n\nhttp://t2\n\t\r\n';
       final tiers = TorrentCreatorService.parseTrackerTiers(input);
-      expect(tiers, equals([
-        ['http://t1'],
-        ['http://t2'],
-      ]),);
+      expect(
+        tiers,
+        equals([
+          ['http://t1'],
+          ['http://t2'],
+        ]),
+      );
     });
 
     test('returns empty list for empty or whitespace-only inputs', () {
       expect(TorrentCreatorService.parseTrackerTiers(''), isEmpty);
-      expect(TorrentCreatorService.parseTrackerTiers('   \t\t\n  \r\n  '), isEmpty);
+      expect(
+        TorrentCreatorService.parseTrackerTiers('   \t\t\n  \r\n  '),
+        isEmpty,
+      );
     });
 
-    test('TorrentCreatorService.create encodes BEP 12 announce-list and backward compatible announce',
+    test(
+        'TorrentCreatorService.create encodes BEP 12 announce-list and backward compatible announce',
         () async {
       final tempDir = Directory.systemTemp.createTempSync('adversarial_bep12_');
       try {
@@ -352,10 +398,16 @@ http://tier1.tracker.com/announce
         expect(metadata.announce, equals('http://tier0.tracker.com/announce'));
 
         // BEP 12 announce-list must contain tier arrays
-        expect(metadata.announceList, equals([
-          ['http://tier0.tracker.com/announce', 'http://tier0-backup.tracker.com/announce'],
-          ['http://tier1.tracker.com/announce'],
-        ]),);
+        expect(
+          metadata.announceList,
+          equals([
+            [
+              'http://tier0.tracker.com/announce',
+              'http://tier0-backup.tracker.com/announce',
+            ],
+            ['http://tier1.tracker.com/announce'],
+          ]),
+        );
       } finally {
         tempDir.deleteSync(recursive: true);
       }
@@ -381,7 +433,8 @@ http://tier1.tracker.com/announce
       if (getIt.isRegistered<Engine>()) getIt.unregister<Engine>();
     });
 
-    test('calculateRatio: 0 size, 0 downloaded, 0 uploaded yields 0.0 safely', () {
+    test('calculateRatio: 0 size, 0 downloaded, 0 uploaded yields 0.0 safely',
+        () {
       final t = AdversarialFakeTorrent(
         id: 1,
         downloadedEver: 0,
@@ -401,7 +454,9 @@ http://tier1.tracker.com/announce
       expect(SeedRatioService.calculateRatio(t), equals(0.0));
     });
 
-    test('calculateRatio: partial download with massive upload uses downloadedEver as denominator', () {
+    test(
+        'calculateRatio: partial download with massive upload uses downloadedEver as denominator',
+        () {
       final t = AdversarialFakeTorrent(
         id: 3,
         downloadedEver: 500,
@@ -411,7 +466,8 @@ http://tier1.tracker.com/announce
       expect(SeedRatioService.calculateRatio(t), equals(10000.0));
     });
 
-    test('calculateRatio: full download uses uploadedEver / downloadedEver', () {
+    test('calculateRatio: full download uses uploadedEver / downloadedEver',
+        () {
       final t = AdversarialFakeTorrent(
         id: 4,
         downloadedEver: 2000,
@@ -421,7 +477,9 @@ http://tier1.tracker.com/announce
       expect(SeedRatioService.calculateRatio(t), equals(2.0));
     });
 
-    test('calculateRatio: initial seeder (downloadedEver == 0) falls back to size', () {
+    test(
+        'calculateRatio: initial seeder (downloadedEver == 0) falls back to size',
+        () {
       final t = AdversarialFakeTorrent(
         id: 5,
         downloadedEver: 0,
@@ -431,7 +489,9 @@ http://tier1.tracker.com/announce
       expect(SeedRatioService.calculateRatio(t), equals(3.0));
     });
 
-    test('calculateRatio: initial seeder with 0 size returns 0.0 safely without divide-by-zero', () {
+    test(
+        'calculateRatio: initial seeder with 0 size returns 0.0 safely without divide-by-zero',
+        () {
       final t = AdversarialFakeTorrent(
         id: 6,
         downloadedEver: 0,
@@ -441,7 +501,8 @@ http://tier1.tracker.com/announce
       expect(SeedRatioService.calculateRatio(t), equals(0.0));
     });
 
-    test('calculateRatio: negative / corrupt integer values return 0.0 safely', () {
+    test('calculateRatio: negative / corrupt integer values return 0.0 safely',
+        () {
       final t = AdversarialFakeTorrent(
         id: 7,
         downloadedEver: -50,
@@ -451,7 +512,8 @@ http://tier1.tracker.com/announce
       expect(SeedRatioService.calculateRatio(t), equals(0.0));
     });
 
-    test('checkAndStop: pauses seeding torrent meeting or exceeding goal', () async {
+    test('checkAndStop: pauses seeding torrent meeting or exceeding goal',
+        () async {
       final service = SeedRatioService.instance;
       await service.setGoal(10, 1.5);
 
@@ -466,7 +528,9 @@ http://tier1.tracker.com/announce
       expect(mockEngine.pausedIds, contains(10));
     });
 
-    test('checkAndStop: does NOT pause non-seeding torrents (downloading, checking, paused)', () async {
+    test(
+        'checkAndStop: does NOT pause non-seeding torrents (downloading, checking, paused)',
+        () async {
       final service = SeedRatioService.instance;
       await service.setGoal(20, 1.0);
 
@@ -502,7 +566,8 @@ http://tier1.tracker.com/announce
   // =========================================================================
   group('Adversarial Focus 4: Blocklist & IP Address SSRF Protection', () {
     Future<List<InternetAddress>> adversarialLookup(String host) async {
-      final clean = host.endsWith('.') ? host.substring(0, host.length - 1) : host;
+      final clean =
+          host.endsWith('.') ? host.substring(0, host.length - 1) : host;
       final lower = clean.toLowerCase();
 
       if (lower == 'safe.tracker.com' || lower == 'public.org') {
@@ -526,72 +591,162 @@ http://tier1.tracker.com/announce
       throw const SocketException('Host not found');
     }
 
-    test('IPv4 classification: private, loopback, CGNAT, multicast, reserved, documentation', () {
+    test(
+        'IPv4 classification: private, loopback, CGNAT, multicast, reserved, documentation',
+        () {
       // Loopback (127.0.0.0/8)
-      expect(IpAddressScope.classify(InternetAddress('127.0.0.1')), equals(AddressScope.loopback));
-      expect(IpAddressScope.classify(InternetAddress('127.255.255.254')), equals(AddressScope.loopback));
+      expect(
+        IpAddressScope.classify(InternetAddress('127.0.0.1')),
+        equals(AddressScope.loopback),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('127.255.255.254')),
+        equals(AddressScope.loopback),
+      );
 
       // Private RFC 1918
-      expect(IpAddressScope.classify(InternetAddress('10.0.0.1')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('172.16.0.1')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('172.31.255.255')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('192.168.1.1')), equals(AddressScope.private));
+      expect(
+        IpAddressScope.classify(InternetAddress('10.0.0.1')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('172.16.0.1')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('172.31.255.255')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('192.168.1.1')),
+        equals(AddressScope.private),
+      );
 
       // Public 172.x outside 172.16/12
-      expect(IpAddressScope.classify(InternetAddress('172.15.255.255')), equals(AddressScope.global));
-      expect(IpAddressScope.classify(InternetAddress('172.32.0.1')), equals(AddressScope.global));
+      expect(
+        IpAddressScope.classify(InternetAddress('172.15.255.255')),
+        equals(AddressScope.global),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('172.32.0.1')),
+        equals(AddressScope.global),
+      );
 
       // Link-local (169.254.0.0/16)
-      expect(IpAddressScope.classify(InternetAddress('169.254.1.1')), equals(AddressScope.linkLocal));
+      expect(
+        IpAddressScope.classify(InternetAddress('169.254.1.1')),
+        equals(AddressScope.linkLocal),
+      );
 
       // CGNAT (100.64.0.0/10)
-      expect(IpAddressScope.classify(InternetAddress('100.64.0.1')), equals(AddressScope.cgnat));
-      expect(IpAddressScope.classify(InternetAddress('100.127.255.255')), equals(AddressScope.cgnat));
+      expect(
+        IpAddressScope.classify(InternetAddress('100.64.0.1')),
+        equals(AddressScope.cgnat),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('100.127.255.255')),
+        equals(AddressScope.cgnat),
+      );
 
       // Multicast & Reserved
-      expect(IpAddressScope.classify(InternetAddress('224.0.0.1')), equals(AddressScope.multicast));
-      expect(IpAddressScope.classify(InternetAddress('240.0.0.1')), equals(AddressScope.reserved));
-      expect(IpAddressScope.classify(InternetAddress('255.255.255.255')), equals(AddressScope.reserved));
+      expect(
+        IpAddressScope.classify(InternetAddress('224.0.0.1')),
+        equals(AddressScope.multicast),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('240.0.0.1')),
+        equals(AddressScope.reserved),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('255.255.255.255')),
+        equals(AddressScope.reserved),
+      );
 
       // Documentation (198.51.100.0/24, 203.0.113.0/24)
-      expect(IpAddressScope.classify(InternetAddress('198.51.100.1')), equals(AddressScope.documentation));
-      expect(IpAddressScope.classify(InternetAddress('203.0.113.1')), equals(AddressScope.documentation));
+      expect(
+        IpAddressScope.classify(InternetAddress('198.51.100.1')),
+        equals(AddressScope.documentation),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('203.0.113.1')),
+        equals(AddressScope.documentation),
+      );
     });
 
-    test('IPv6 classification: loopback, unique-local, link-local, documentation, global, IPv4-mapped', () {
+    test(
+        'IPv6 classification: loopback, unique-local, link-local, documentation, global, IPv4-mapped',
+        () {
       // Loopback
-      expect(IpAddressScope.classify(InternetAddress('::1')), equals(AddressScope.loopback));
+      expect(
+        IpAddressScope.classify(InternetAddress('::1')),
+        equals(AddressScope.loopback),
+      );
 
       // Unique-local (fc00::/7)
-      expect(IpAddressScope.classify(InternetAddress('fc00::1')), equals(AddressScope.uniqueLocal));
-      expect(IpAddressScope.classify(InternetAddress('fd00::1')), equals(AddressScope.uniqueLocal));
+      expect(
+        IpAddressScope.classify(InternetAddress('fc00::1')),
+        equals(AddressScope.uniqueLocal),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('fd00::1')),
+        equals(AddressScope.uniqueLocal),
+      );
 
       // Link-local (fe80::/10)
-      expect(IpAddressScope.classify(InternetAddress('fe80::1')), equals(AddressScope.linkLocal));
+      expect(
+        IpAddressScope.classify(InternetAddress('fe80::1')),
+        equals(AddressScope.linkLocal),
+      );
 
       // Multicast (ff00::/8)
-      expect(IpAddressScope.classify(InternetAddress('ff02::1')), equals(AddressScope.multicast));
+      expect(
+        IpAddressScope.classify(InternetAddress('ff02::1')),
+        equals(AddressScope.multicast),
+      );
 
       // Documentation (2001:db8::/32)
-      expect(IpAddressScope.classify(InternetAddress('2001:db8::1')), equals(AddressScope.documentation));
+      expect(
+        IpAddressScope.classify(InternetAddress('2001:db8::1')),
+        equals(AddressScope.documentation),
+      );
 
       // Global (2000::/3)
-      expect(IpAddressScope.classify(InternetAddress('2001:4860:4860::8888')), equals(AddressScope.global));
+      expect(
+        IpAddressScope.classify(InternetAddress('2001:4860:4860::8888')),
+        equals(AddressScope.global),
+      );
 
       // IPv4-mapped IPv6 addresses (::ffff:10.0.0.1, ::ffff:127.0.0.1)
-      expect(IpAddressScope.classify(InternetAddress('::ffff:10.0.0.1')), equals(AddressScope.private));
-      expect(IpAddressScope.classify(InternetAddress('::ffff:127.0.0.1')), equals(AddressScope.loopback));
-      expect(IpAddressScope.classify(InternetAddress('::ffff:8.8.8.8')), equals(AddressScope.global));
+      expect(
+        IpAddressScope.classify(InternetAddress('::ffff:10.0.0.1')),
+        equals(AddressScope.private),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('::ffff:127.0.0.1')),
+        equals(AddressScope.loopback),
+      );
+      expect(
+        IpAddressScope.classify(InternetAddress('::ffff:8.8.8.8')),
+        equals(AddressScope.global),
+      );
     });
 
-    test('SSRF Protection: rejects shorthand, octal, hex IPs, DNS rebinding, and timeouts', () async {
+    test(
+        'SSRF Protection: rejects shorthand, octal, hex IPs, DNS rebinding, and timeouts',
+        () async {
       // Shorthand / octal / hex IPs
       expect(IpAddressScope.isPubliclyRoutableHostSync('127.1'), isFalse);
       expect(IpAddressScope.isPubliclyRoutableHostSync('0177.0.0.1'), isFalse);
       expect(IpAddressScope.isPubliclyRoutableHostSync('0x7f.0.0.1'), isFalse);
       expect(IpAddressScope.isPubliclyRoutableHostSync('localhost'), isFalse);
-      expect(IpAddressScope.isPubliclyRoutableHostSync('app.localhost'), isFalse);
-      expect(IpAddressScope.isPubliclyRoutableHostSync('server.local'), isFalse);
+      expect(
+        IpAddressScope.isPubliclyRoutableHostSync('app.localhost'),
+        isFalse,
+      );
+      expect(
+        IpAddressScope.isPubliclyRoutableHostSync('server.local'),
+        isFalse,
+      );
 
       // Async DNS resolution check with mock resolver
       expect(
@@ -637,11 +792,28 @@ http://tier1.tracker.com/announce
       );
     });
 
-    test('BlocklistService URL validation rejects invalid schemes and userInfo', () async {
-      expect(await BlocklistService.isValidBlocklistUrl(''), isTrue); // Empty is valid (disabled)
-      expect(await BlocklistService.isValidBlocklistUrl('ftp://example.com/list.txt'), isFalse);
-      expect(await BlocklistService.isValidBlocklistUrl('javascript:alert(1)'), isFalse);
-      expect(await BlocklistService.isValidBlocklistUrl('http://user:pass@public.org/list.txt'), isFalse);
+    test('BlocklistService URL validation rejects invalid schemes and userInfo',
+        () async {
+      expect(
+        await BlocklistService.isValidBlocklistUrl(''),
+        isTrue,
+      ); // Empty is valid (disabled)
+      expect(
+        await BlocklistService.isValidBlocklistUrl(
+          'ftp://example.com/list.txt',
+        ),
+        isFalse,
+      );
+      expect(
+        await BlocklistService.isValidBlocklistUrl('javascript:alert(1)'),
+        isFalse,
+      );
+      expect(
+        await BlocklistService.isValidBlocklistUrl(
+          'http://user:pass@public.org/list.txt',
+        ),
+        isFalse,
+      );
       expect(
         await BlocklistService.isValidBlocklistUrl(
           'https://public.org/list.txt',
@@ -656,7 +828,8 @@ http://tier1.tracker.com/announce
   // FOCUS AREA 5: Search Parser Adversarial Stress & ReDoS
   // =========================================================================
   group('Adversarial Focus 5: Search Parser Resilience', () {
-    test('handles malformed, broken, and unclosed XML feeds without crashing', () {
+    test('handles malformed, broken, and unclosed XML feeds without crashing',
+        () {
       const brokenXmls = [
         '<rss><channel><item><title>Broken 1</item></channel></rss>',
         '<?xml version="1.0"?><rss><item><title>No link or magnet</title><size>1000</size></item></rss>',
@@ -666,7 +839,8 @@ http://tier1.tracker.com/announce
       ];
 
       for (final xml in brokenXmls) {
-        final results = SearchService.instance.parseResultsForTesting('TestXML', xml);
+        final results =
+            SearchService.instance.parseResultsForTesting('TestXML', xml);
         expect(results, isA<List<SearchResult>>());
       }
     });
@@ -681,12 +855,15 @@ http://tier1.tracker.com/announce
       ];
 
       for (final jsonStr in brokenJsons) {
-        final results = SearchService.instance.parseResultsForTesting('TestJSON', jsonStr);
+        final results =
+            SearchService.instance.parseResultsForTesting('TestJSON', jsonStr);
         expect(results, isA<List<SearchResult>>());
       }
     });
 
-    test('parses 40-char info_hash in JSON, XML Torznab, and HTML table without magnet', () {
+    test(
+        'parses 40-char info_hash in JSON, XML Torznab, and HTML table without magnet',
+        () {
       // 1. JSON info_hash
       const jsonStr = '''
 [
@@ -698,9 +875,13 @@ http://tier1.tracker.com/announce
   }
 ]
 ''';
-      final jsonResults = SearchService.instance.parseResultsForTesting('API', jsonStr);
+      final jsonResults =
+          SearchService.instance.parseResultsForTesting('API', jsonStr);
       expect(jsonResults.length, equals(1));
-      expect(jsonResults.first.magnetLink, contains('1111111111111111111111111111111111111111'));
+      expect(
+        jsonResults.first.magnetLink,
+        contains('1111111111111111111111111111111111111111'),
+      );
       expect(jsonResults.first.title, equals('JSON Hash Torrent'));
 
       // 2. Torznab XML infohash attribute
@@ -715,9 +896,13 @@ http://tier1.tracker.com/announce
   </channel>
 </rss>
 ''';
-      final xmlResults = SearchService.instance.parseResultsForTesting('Torznab', xmlStr);
+      final xmlResults =
+          SearchService.instance.parseResultsForTesting('Torznab', xmlStr);
       expect(xmlResults.length, equals(1));
-      expect(xmlResults.first.magnetLink, contains('2222222222222222222222222222222222222222'));
+      expect(
+        xmlResults.first.magnetLink,
+        contains('2222222222222222222222222222222222222222'),
+      );
 
       // 3. HTML table row with hex hash in link
       const htmlTable = '''
@@ -729,9 +914,13 @@ http://tier1.tracker.com/announce
   </tr>
 </table>
 ''';
-      final htmlResults = SearchService.instance.parseResultsForTesting('HTML', htmlTable);
+      final htmlResults =
+          SearchService.instance.parseResultsForTesting('HTML', htmlTable);
       expect(htmlResults.length, equals(1));
-      expect(htmlResults.first.magnetLink, contains('3333333333333333333333333333333333333333'));
+      expect(
+        htmlResults.first.magnetLink,
+        contains('3333333333333333333333333333333333333333'),
+      );
       expect(htmlResults.first.title, equals('HTML Hash Torrent'));
     });
 
@@ -745,19 +934,26 @@ http://tier1.tracker.com/announce
   </tr>
 </table>
 ''';
-      final results = SearchService.instance.parseResultsForTesting('EntityTest', html);
+      final results =
+          SearchService.instance.parseResultsForTesting('EntityTest', html);
       expect(results.length, equals(1));
-      expect(results.first.title, equals('"Alpha & Beta" <Test> \'Single\' ABC'));
+      expect(
+        results.first.title,
+        equals('"Alpha & Beta" <Test> \'Single\' ABC'),
+      );
     });
 
-    test('ReDoS & HTML Bomb stress testing: completes in linear time (< 500ms)', () {
+    test('ReDoS & HTML Bomb stress testing: completes in linear time (< 500ms)',
+        () {
       // 2000 nested spans and repetitive patterns
-      final nestedBomb = '<table><tr><td><a class="detLink" href="#">Bomb Target</a>${'<span><span>nested</span></span>' * 2000}</td>'
+      final nestedBomb =
+          '<table><tr><td><a class="detLink" href="#">Bomb Target</a>${'<span><span>nested</span></span>' * 2000}</td>'
           '<td><a href="magnet:?xt=urn:btih:5555555555555555555555555555555555555555&dn=Bomb+Target">Download</a></td>'
           '<td>100 MB</td></tr></table>';
 
       final sw = Stopwatch()..start();
-      final results = SearchService.instance.parseResultsForTesting('ReDoSBomb', nestedBomb);
+      final results = SearchService.instance
+          .parseResultsForTesting('ReDoSBomb', nestedBomb);
       sw.stop();
 
       expect(results.length, equals(1));
@@ -785,7 +981,8 @@ http://tier1.tracker.com/announce
       if (getIt.isRegistered<Engine>()) getIt.unregister<Engine>();
     });
 
-    test('handles 0 piece count and 0 piece size gracefully without crashes', () async {
+    test('handles 0 piece count and 0 piece size gracefully without crashes',
+        () async {
       final zeroTorrent = AdversarialFakeTorrent(
         id: 100,
         pieceCount: 0,
@@ -807,10 +1004,15 @@ http://tier1.tracker.com/announce
         file: zeroTorrent.files.first,
       );
 
-      expect(mockEngine.callLog, contains('setTorrentSequentialDownload(100, true)'));
+      expect(
+        mockEngine.callLog,
+        contains('setTorrentSequentialDownload(100, true)'),
+      );
     });
 
-    test('validates boundary clamping when beginPiece or endPiece exceed bounds', () async {
+    test(
+        'validates boundary clamping when beginPiece or endPiece exceed bounds',
+        () async {
       final outOfBoundsTorrent = AdversarialFakeTorrent(
         id: 101,
         pieceCount: 20,
@@ -838,7 +1040,9 @@ http://tier1.tracker.com/announce
       expect(outOfBoundsTorrent.filePriorityCalls, equals(['high: [0]']));
     });
 
-    test('concurrent boost tasks on different files of same torrent maintain ref count', () async {
+    test(
+        'concurrent boost tasks on different files of same torrent maintain ref count',
+        () async {
       final multiFileTorrent = AdversarialFakeTorrent(
         id: 102,
         pieceCount: 50,
@@ -894,18 +1098,22 @@ http://tier1.tracker.com/announce
 
       // Speed limit disabled during active streaming buffering
       expect(
-        mockEngine.callLog.where((c) => c.contains('setTorrentSpeedLimit(102, dl: 0')),
+        mockEngine.callLog
+            .where((c) => c.contains('setTorrentSpeedLimit(102, dl: 0')),
         isNotEmpty,
       );
 
       // Speed limit restored once when both complete
       expect(
-        mockEngine.callLog.where((c) => c.contains('setTorrentSpeedLimit(102, dl: 500')),
+        mockEngine.callLog
+            .where((c) => c.contains('setTorrentSpeedLimit(102, dl: 500')),
         hasLength(1),
       );
     });
 
-    test('user changing speed limits while buffering is preserved and NOT clobbered', () async {
+    test(
+        'user changing speed limits while buffering is preserved and NOT clobbered',
+        () async {
       final torrent = AdversarialFakeTorrent(
         id: 103,
         pieceCount: 20,
@@ -947,10 +1155,10 @@ http://tier1.tracker.com/announce
 
       // Must NOT overwrite user setting with stale 1000
       expect(
-        mockEngine.callLog.where((c) => c.contains('setTorrentSpeedLimit(103, dl: 1000')),
+        mockEngine.callLog
+            .where((c) => c.contains('setTorrentSpeedLimit(103, dl: 1000')),
         isEmpty,
       );
     });
   });
 }
-

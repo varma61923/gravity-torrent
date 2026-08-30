@@ -108,7 +108,8 @@ void main() {
       );
     });
 
-    test('accepts offline unresolvable domain (deferring to fetch time)', () async {
+    test('accepts offline unresolvable domain (deferring to fetch time)',
+        () async {
       expect(
         await BlocklistService.isValidBlocklistUrl(
           'https://offline-domain.com/blocklist.txt',
@@ -118,7 +119,8 @@ void main() {
       );
     });
 
-    test('rejects hostname on DNS TimeoutException (fail-closed SSRF gate)', () async {
+    test('rejects hostname on DNS TimeoutException (fail-closed SSRF gate)',
+        () async {
       expect(
         await BlocklistService.isValidBlocklistUrl(
           'https://stalling-server.com/blocklist.txt',
@@ -281,7 +283,8 @@ void main() {
       expect(service.lastUpdated, isNotNull);
     });
 
-    test('falls back to defaultUrl when stored URL is invalid or unsafe', () async {
+    test('falls back to defaultUrl when stored URL is invalid or unsafe',
+        () async {
       SharedPreferences.setMockInitialValues({
         'gravity_torrent_blocklist_enabled': true,
         'gravity_torrent_blocklist_url': 'http://192.168.1.1/blocklist.txt',
@@ -294,7 +297,8 @@ void main() {
       expect(service.url, equals(BlocklistService.defaultUrl));
     });
 
-    test('setUrl persists valid URL and throws ArgumentError on unsafe URL', () async {
+    test('setUrl persists valid URL and throws ArgumentError on unsafe URL',
+        () async {
       final service = BlocklistService.instance;
       await service.load();
 

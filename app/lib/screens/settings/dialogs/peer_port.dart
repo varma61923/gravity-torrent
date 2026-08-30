@@ -25,7 +25,8 @@ class _PeerPortDialogState extends State<PeerPortDialog> {
     super.initState();
     peerPort = TextEditingController.fromValue(
       TextEditingValue(
-        text: widget.currentValue > 0 ? widget.currentValue.toString() : '51413',
+        text:
+            widget.currentValue > 0 ? widget.currentValue.toString() : '51413',
       ),
     );
   }

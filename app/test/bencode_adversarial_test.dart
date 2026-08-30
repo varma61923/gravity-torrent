@@ -58,7 +58,9 @@ void main() {
       }
     });
 
-    test('rejects invalid characters, floats, hex, spaces, and null bytes in integer token', () {
+    test(
+        'rejects invalid characters, floats, hex, spaces, and null bytes in integer token',
+        () {
       final cases = [
         'i1.0e',
         'i1.5e',
@@ -173,7 +175,8 @@ void main() {
       }
     });
 
-    test('rejects massive or overflow string lengths safely without OOM crash', () {
+    test('rejects massive or overflow string lengths safely without OOM crash',
+        () {
       final cases = [
         '999999999999999999999999:abc',
         '9223372036854775807:abc', // int64.max
@@ -191,14 +194,24 @@ void main() {
       }
     });
 
-    test('handles zero-length strings and arbitrary binary payloads correctly', () {
+    test('handles zero-length strings and arbitrary binary payloads correctly',
+        () {
       expect(
         Bencode.decode(Uint8List.fromList(ascii.encode('0:'))),
         equals(Uint8List(0)),
       );
 
       final rawBytes = Uint8List.fromList([
-        0x00, 0x01, 0x02, 0xFF, 0xFE, 0x80, 0x7F, 0x00, 0x00, 0xAA,
+        0x00,
+        0x01,
+        0x02,
+        0xFF,
+        0xFE,
+        0x80,
+        0x7F,
+        0x00,
+        0x00,
+        0xAA,
       ]);
       final encoded = Bencode.encode(rawBytes);
       expect(encoded.sublist(0, 3), equals(ascii.encode('10:')));
@@ -209,7 +222,9 @@ void main() {
     });
   });
 
-  group('Adversarial Bencode - Dictionary Key Ordering, Uniqueness & UTF-8 Bytes', () {
+  group(
+      'Adversarial Bencode - Dictionary Key Ordering, Uniqueness & UTF-8 Bytes',
+      () {
     test('rejects duplicate dictionary keys at root and nested levels', () {
       final duplicateRoot = Uint8List.fromList(
         ascii.encode('d3:cow3:moo3:cow4:moo2e'),
@@ -250,12 +265,15 @@ void main() {
       final unsorted = Uint8List.fromList(
         ascii.encode('d3:zoo1:a3:cow3:mooe'),
       );
-      final decoded = Bencode.decode(unsorted, strictKeyOrder: false) as Map<String, dynamic>;
+      final decoded = Bencode.decode(unsorted, strictKeyOrder: false)
+          as Map<String, dynamic>;
       expect(decoded.containsKey('zoo'), isTrue);
       expect(decoded.containsKey('cow'), isTrue);
     });
 
-    test('strictly enforces UTF-8 byte ordering vs UTF-16 code units (BEP 0003)', () {
+    test(
+        'strictly enforces UTF-8 byte ordering vs UTF-16 code units (BEP 0003)',
+        () {
       // Test cases with 1-byte, 2-byte, 3-byte, and 4-byte UTF-8 sequences
       // 'a' = 0x61 (1 byte)
       // 'z' = 0x7A (1 byte)
@@ -316,7 +334,8 @@ void main() {
         expect(
           () => Bencode.decode(Uint8List.fromList(ascii.encode(c))),
           throwsA(isA<FormatException>()),
-          reason: 'Dictionary with non-string key "$c" should throw FormatException',
+          reason:
+              'Dictionary with non-string key "$c" should throw FormatException',
         );
       }
     });
@@ -338,7 +357,8 @@ void main() {
       expect(decoded, isNotNull);
     });
 
-    test('throws FormatException when nesting exceeds maxDepth (513 levels)', () {
+    test('throws FormatException when nesting exceeds maxDepth (513 levels)',
+        () {
       final buffer = StringBuffer();
       for (int i = 0; i < 513; i++) {
         buffer.write('l');
@@ -378,7 +398,9 @@ void main() {
       );
     });
 
-    test('extreme depth stress test (1500 levels) never triggers uncatchable StackOverflow', () {
+    test(
+        'extreme depth stress test (1500 levels) never triggers uncatchable StackOverflow',
+        () {
       final buffer = StringBuffer();
       for (int i = 0; i < 1500; i++) {
         buffer.write('l');
@@ -397,7 +419,8 @@ void main() {
   });
 
   group('Adversarial Bencode - Trailing Junk & Container Delimiters', () {
-    test('rejects trailing junk data after root integer, string, list, or dict', () {
+    test('rejects trailing junk data after root integer, string, list, or dict',
+        () {
       final payloads = [
         'i42eextra',
         '4:spamjunk',
@@ -417,7 +440,8 @@ void main() {
               contains('Extraneous trailing data'),
             ),
           ),
-          reason: 'Payload with trailing data "$p" should throw FormatException',
+          reason:
+              'Payload with trailing data "$p" should throw FormatException',
         );
       }
     });
@@ -438,7 +462,8 @@ void main() {
         expect(
           () => Bencode.decode(Uint8List.fromList(ascii.encode(p))),
           throwsA(isA<FormatException>()),
-          reason: 'Unbalanced delimiter payload "$p" should throw FormatException',
+          reason:
+              'Unbalanced delimiter payload "$p" should throw FormatException',
         );
       }
     });
@@ -548,7 +573,8 @@ void main() {
       );
     });
 
-    test('throws FormatException on invalid single-file length or missing mode', () {
+    test('throws FormatException on invalid single-file length or missing mode',
+        () {
       // Negative single-file length
       expect(
         () => Bencode.decodeTorrent(makeValidTorrent(length: -10)),
@@ -557,7 +583,8 @@ void main() {
 
       // Neither length nor files present
       expect(
-        () => Bencode.decodeTorrent(makeValidTorrent(length: null, files: null)),
+        () =>
+            Bencode.decodeTorrent(makeValidTorrent(length: null, files: null)),
         throwsA(isA<FormatException>()),
       );
     });
@@ -582,7 +609,9 @@ void main() {
         () => Bencode.decodeTorrent(
           makeValidTorrent(
             files: [
-              {'path': ['file.txt']},
+              {
+                'path': ['file.txt'],
+              },
             ],
           ),
         ),
@@ -594,7 +623,10 @@ void main() {
         () => Bencode.decodeTorrent(
           makeValidTorrent(
             files: [
-              {'length': -50, 'path': ['file.txt']},
+              {
+                'length': -50,
+                'path': ['file.txt'],
+              },
             ],
           ),
         ),
@@ -731,7 +763,9 @@ void main() {
       expect(pubMeta.isPrivate, isFalse);
     });
 
-    test('infoHash is identical to SHA-1 of original raw info dictionary bytes slice', () {
+    test(
+        'infoHash is identical to SHA-1 of original raw info dictionary bytes slice',
+        () {
       // Create a torrent metainfo with non-standard key ordering in the raw bytes
       // to guarantee that infoHash is calculated directly on the raw slice and not re-serialized
       final valid = makeValidTorrent(name: 'hash_test.iso', length: 1000);
@@ -740,7 +774,8 @@ void main() {
       // Decode the dictionary raw and verify SHA-1
       final rawDecoded = Bencode.decode(valid) as Map<String, dynamic>;
       final rawInfoEncoded = Bencode.encode(rawDecoded['info'] as Object);
-      final sha1Expected = sha1.convert(rawInfoEncoded).toString().toLowerCase();
+      final sha1Expected =
+          sha1.convert(rawInfoEncoded).toString().toLowerCase();
 
       expect(meta.infoHashHex, equals(sha1Expected));
       expect(meta.infoHash.length, equals(20));
@@ -748,7 +783,9 @@ void main() {
   });
 
   group('Adversarial Bencode - Fuzz & Random Mutation Stress Harness', () {
-    test('survives 1000 randomized pseudo-fuzz mutations without crashes or hangs', () {
+    test(
+        'survives 1000 randomized pseudo-fuzz mutations without crashes or hangs',
+        () {
       final rng = Random(0xCAFE);
 
       // Base valid seeds
@@ -757,7 +794,9 @@ void main() {
         ascii.encode('4:spam'),
         ascii.encode('l4:spami42ee'),
         ascii.encode('d3:cow3:moo4:spam4:eggse'),
-        ascii.encode('d4:infod6:lengthi100e4:name4:test12:piece lengthi16384e6:pieces20:12345678901234567890eee'),
+        ascii.encode(
+          'd4:infod6:lengthi100e4:name4:test12:piece lengthi16384e6:pieces20:12345678901234567890eee',
+        ),
       ];
 
       int formatExceptions = 0;
@@ -805,14 +844,17 @@ void main() {
         }
 
         try {
-          final res = Bencode.decode(testPayload, allowTrailingData: rng.nextBool());
+          final res =
+              Bencode.decode(testPayload, allowTrailingData: rng.nextBool());
           if (res != null) {
             successfulDecodes++;
           }
         } on FormatException {
           formatExceptions++;
         } catch (e, st) {
-          fail('Unexpected exception type ${e.runtimeType}: $e\n$st for payload: $testPayload');
+          fail(
+            'Unexpected exception type ${e.runtimeType}: $e\n$st for payload: $testPayload',
+          );
         }
       }
 

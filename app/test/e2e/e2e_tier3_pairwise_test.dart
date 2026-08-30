@@ -708,7 +708,8 @@ udp://fallback-tracker.private-corp.org:1337/announce
           'peer-port': args['peer-port'],
           'download-dir': args['download-dir'],
           'speed-limit-up': args['speed-limit-up'],
-          'speed-limit-up-enabled': args['speed-limit-up-enabled'] == true ? 1 : 0,
+          'speed-limit-up-enabled':
+              args['speed-limit-up-enabled'] == true ? 1 : 0,
         },
       };
       final bencoded = Bencode.encode(bencodeMap);
@@ -740,11 +741,15 @@ udp://fallback-tracker.private-corp.org:1337/announce
 
       // 4. BlocklistService SSRF handling
       expect(
-        await BlocklistService.isValidBlocklistUrl('http://127.0.0.1:8080/bad_blocklist.txt'),
+        await BlocklistService.isValidBlocklistUrl(
+          'http://127.0.0.1:8080/bad_blocklist.txt',
+        ),
         isFalse,
       );
       expect(
-        await BlocklistService.isValidBlocklistUrl('http://169.254.169.254/latest/meta-data'),
+        await BlocklistService.isValidBlocklistUrl(
+          'http://169.254.169.254/latest/meta-data',
+        ),
         isFalse,
       );
     });
@@ -768,18 +773,35 @@ udp://fallback-tracker.private-corp.org:1337/announce
       expect(searchResults.length, equals(1));
       final result = searchResults.first;
       expect(result.title, equals('Archived Package v1'));
-      expect(result.magnetLink, contains('fedcba9876543210fedcba9876543210fedcba98'));
+      expect(
+        result.magnetLink,
+        contains('fedcba9876543210fedcba9876543210fedcba98'),
+      );
 
       // 2. Create zip archive with safe file and zip-slip attempt
-      final pkgDir = Directory(p.join(tempDir.path, 'pkg_source'))..createSync();
-      final readme = File(p.join(pkgDir.path, 'README.txt'))..writeAsStringSync('Package content');
+      final pkgDir = Directory(p.join(tempDir.path, 'pkg_source'))
+        ..createSync();
+      final readme = File(p.join(pkgDir.path, 'README.txt'))
+        ..writeAsStringSync('Package content');
 
       final zipFile = File(p.join(tempDir.path, 'package.zip'));
       final archive = Archive();
-      archive.addFile(ArchiveFile('README.txt', readme.lengthSync(), readme.readAsBytesSync()));
+      archive.addFile(
+        ArchiveFile(
+          'README.txt',
+          readme.lengthSync(),
+          readme.readAsBytesSync(),
+        ),
+      );
       // Malicious zip slip entry
       final maliciousData = utf8.encode('pwned');
-      archive.addFile(ArchiveFile('../../../evil.txt', maliciousData.length, maliciousData));
+      archive.addFile(
+        ArchiveFile(
+          '../../../evil.txt',
+          maliciousData.length,
+          maliciousData,
+        ),
+      );
 
       final zipBytes = ZipEncoder().encode(archive);
       await zipFile.writeAsBytes(zipBytes);
@@ -807,7 +829,8 @@ udp://fallback-tracker.private-corp.org:1337/announce
       );
 
       // 5. Verify safe extraction inside extractDest / package subdir, and no escape
-      final extractedReadme = File(p.join(tempDir.path, 'Archived Package v1', 'README.txt'));
+      final extractedReadme =
+          File(p.join(tempDir.path, 'Archived Package v1', 'README.txt'));
       expect(extractedReadme.existsSync(), isTrue);
       expect(extractedReadme.readAsStringSync(), equals('Package content'));
 

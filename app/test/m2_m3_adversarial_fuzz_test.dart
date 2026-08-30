@@ -153,10 +153,12 @@ void main() {
         (tester) async {
       final invalidInitValues = [0, -1, -500, -65535];
       for (final val in invalidInitValues) {
-        await tester.pumpWidget(buildDialog(
-          currentValue: val,
-          onSave: (_) {},
-        ),);
+        await tester.pumpWidget(
+          buildDialog(
+            currentValue: val,
+            onSave: (_) {},
+          ),
+        );
         await tester.pumpAndSettle();
         expect(find.text('51413'), findsOneWidget);
       }
@@ -164,10 +166,12 @@ void main() {
 
     testWidgets('Accepts lower bound port 1', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildDialog(
-        currentValue: 51413,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildDialog(
+          currentValue: 51413,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -179,10 +183,12 @@ void main() {
 
     testWidgets('Accepts upper bound port 65535', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildDialog(
-        currentValue: 51413,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildDialog(
+          currentValue: 51413,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -194,10 +200,12 @@ void main() {
 
     testWidgets('Rejects port 0', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildDialog(
-        currentValue: 51413,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildDialog(
+          currentValue: 51413,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -210,10 +218,12 @@ void main() {
 
     testWidgets('Rejects port 65536', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildDialog(
-        currentValue: 51413,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildDialog(
+          currentValue: 51413,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -226,10 +236,12 @@ void main() {
 
     testWidgets('Rejects port 70000', (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildDialog(
-        currentValue: 51413,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildDialog(
+          currentValue: 51413,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -243,10 +255,12 @@ void main() {
     testWidgets('Rejects massive overflow integers and empty strings',
         (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildDialog(
-        currentValue: 51413,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildDialog(
+          currentValue: 51413,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -266,10 +280,12 @@ void main() {
     testWidgets('Filters non-digit characters via input formatter',
         (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildDialog(
-        currentValue: 51413,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildDialog(
+          currentValue: 51413,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final textField = find.byType(TextFormField);
@@ -284,10 +300,12 @@ void main() {
     testWidgets('Dialog can be cancelled without calling onSave',
         (tester) async {
       int? savedPort;
-      await tester.pumpWidget(buildDialog(
-        currentValue: 51413,
-        onSave: (p) => savedPort = p,
-      ),);
+      await tester.pumpWidget(
+        buildDialog(
+          currentValue: 51413,
+          onSave: (p) => savedPort = p,
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextFormField), '8080');
@@ -319,11 +337,12 @@ void main() {
 
       expect(tiers.length, equals(3));
       expect(
-          tiers[0],
-          equals([
-            'http://tier1-a.org/announce',
-            'udp://tier1-b.org:6969/announce',
-          ]),);
+        tiers[0],
+        equals([
+          'http://tier1-a.org/announce',
+          'udp://tier1-b.org:6969/announce',
+        ]),
+      );
       expect(tiers[1], equals(['http://tier2-a.org/announce']));
       expect(tiers[2], equals(['http://tier3-a.org/announce']));
     });
@@ -408,11 +427,12 @@ void main() {
 
         expect(meta.announce, equals('http://tier0-a.org/announce'));
         expect(
-            meta.announceList,
-            equals([
-              ['http://tier0-a.org/announce', 'http://tier0-b.org/announce'],
-              ['http://tier1-a.org/announce'],
-            ]),);
+          meta.announceList,
+          equals([
+            ['http://tier0-a.org/announce', 'http://tier0-b.org/announce'],
+            ['http://tier1-a.org/announce'],
+          ]),
+        );
       } finally {
         tempDir.deleteSync(recursive: true);
       }
@@ -441,67 +461,79 @@ void main() {
     test('SeedRatioService.calculateRatio mathematical boundary testing', () {
       // 1. All zero
       expect(
-        SeedRatioService.calculateRatio(FuzzFakeTorrent(
-          id: 1,
-          downloadedEver: 0,
-          uploadedEver: 0,
-          size: 0,
-        ),),
+        SeedRatioService.calculateRatio(
+          FuzzFakeTorrent(
+            id: 1,
+            downloadedEver: 0,
+            uploadedEver: 0,
+            size: 0,
+          ),
+        ),
         equals(0.0),
       );
 
       // 2. 0 downloadedEver, uploadedEver > 0, size > 0 (initial seeder)
       expect(
-        SeedRatioService.calculateRatio(FuzzFakeTorrent(
-          id: 2,
-          downloadedEver: 0,
-          uploadedEver: 2500,
-          size: 1000,
-        ),),
+        SeedRatioService.calculateRatio(
+          FuzzFakeTorrent(
+            id: 2,
+            downloadedEver: 0,
+            uploadedEver: 2500,
+            size: 1000,
+          ),
+        ),
         equals(2.5),
       );
 
       // 3. 0 downloadedEver, 0 size, uploadedEver > 0
       expect(
-        SeedRatioService.calculateRatio(FuzzFakeTorrent(
-          id: 3,
-          downloadedEver: 0,
-          uploadedEver: 5000,
-          size: 0,
-        ),),
+        SeedRatioService.calculateRatio(
+          FuzzFakeTorrent(
+            id: 3,
+            downloadedEver: 0,
+            uploadedEver: 5000,
+            size: 0,
+          ),
+        ),
         equals(0.0),
       );
 
       // 4. downloadedEver > 0 overrides size even if size is different
       expect(
-        SeedRatioService.calculateRatio(FuzzFakeTorrent(
-          id: 4,
-          downloadedEver: 200,
-          uploadedEver: 600,
-          size: 10000,
-        ),),
+        SeedRatioService.calculateRatio(
+          FuzzFakeTorrent(
+            id: 4,
+            downloadedEver: 200,
+            uploadedEver: 600,
+            size: 10000,
+          ),
+        ),
         equals(3.0),
       );
 
       // 5. Negative fields return 0.0 safely
       expect(
-        SeedRatioService.calculateRatio(FuzzFakeTorrent(
-          id: 5,
-          downloadedEver: -100,
-          uploadedEver: 500,
-          size: -100,
-        ),),
+        SeedRatioService.calculateRatio(
+          FuzzFakeTorrent(
+            id: 5,
+            downloadedEver: -100,
+            uploadedEver: 500,
+            size: -100,
+          ),
+        ),
         equals(0.0),
       );
 
       // 6. Huge values (terabytes/petabytes)
       expect(
-        SeedRatioService.calculateRatio(FuzzFakeTorrent(
-          id: 6,
-          downloadedEver: 1000000000000000,
-          uploadedEver: 3500000000000000,
-          size: 1000000000000000,
-        ),),
+        SeedRatioService.calculateRatio(
+          FuzzFakeTorrent(
+            id: 6,
+            downloadedEver: 1000000000000000,
+            uploadedEver: 3500000000000000,
+            size: 1000000000000000,
+          ),
+        ),
         equals(3.5),
       );
     });
@@ -679,17 +711,23 @@ void main() {
       expect(results.length, equals(2));
 
       expect(results[0].title, equals('Ubuntu 24.04 & Debian 12'));
-      expect(results[0].magnetLink,
-          contains('1111111111111111111111111111111111111111'),);
+      expect(
+        results[0].magnetLink,
+        contains('1111111111111111111111111111111111111111'),
+      );
       expect(results[0].seeders, equals(120));
       expect(results[0].leechers, equals(15));
       expect(results[0].size, equals(4500000000));
 
       expect(results[1].title, equals('Fedora Workstation'));
-      expect(results[1].magnetLink,
-          contains('2222222222222222222222222222222222222222'),);
-      expect(results[1].torrentUrl,
-          equals('https://indexer.com/download/fedora.torrent'),);
+      expect(
+        results[1].magnetLink,
+        contains('2222222222222222222222222222222222222222'),
+      );
+      expect(
+        results[1].torrentUrl,
+        equals('https://indexer.com/download/fedora.torrent'),
+      );
     });
 
     test('Stage 3 HTML Tables: TPB, 1337x, RARBG with diverse size units', () {
@@ -722,15 +760,19 @@ void main() {
       expect(results.length, equals(2));
 
       expect(results[0].title, equals('Arch Linux 2026'));
-      expect(results[0].magnetLink,
-          contains('3333333333333333333333333333333333333333'),);
+      expect(
+        results[0].magnetLink,
+        contains('3333333333333333333333333333333333333333'),
+      );
       expect(results[0].seeders, equals(250));
       expect(results[0].leechers, equals(20));
       expect(results[0].size, equals((1.25 * 1024 * 1024 * 1024).round()));
 
       expect(results[1].title, equals('FreeBSD 14.1'));
-      expect(results[1].magnetLink,
-          contains('4444444444444444444444444444444444444444'),);
+      expect(
+        results[1].magnetLink,
+        contains('4444444444444444444444444444444444444444'),
+      );
       expect(results[1].seeders, equals(100));
       expect(results[1].leechers, equals(10));
       expect(results[1].size, equals((850.5 * 1024 * 1024).round()));
@@ -755,8 +797,10 @@ void main() {
       expect(cardResults.first.title, equals('Card Layout Linux Mint'));
       expect(cardResults.first.seeders, equals(400));
       expect(cardResults.first.leechers, equals(50));
-      expect(cardResults.first.magnetLink,
-          contains('5555555555555555555555555555555555555555'),);
+      expect(
+        cardResults.first.magnetLink,
+        contains('5555555555555555555555555555555555555555'),
+      );
 
       const fallbackHtml = '''
       <p>Here is an unstructured paragraph with a link:
@@ -768,8 +812,10 @@ void main() {
           .parseResultsForTesting('FallbackEngine', fallbackHtml);
       expect(fallbackResults.length, equals(1));
       expect(fallbackResults.first.title, equals('RawFallbackFile'));
-      expect(fallbackResults.first.magnetLink,
-          contains('6666666666666666666666666666666666666666'),);
+      expect(
+        fallbackResults.first.magnetLink,
+        contains('6666666666666666666666666666666666666666'),
+      );
     });
 
     test(
@@ -789,7 +835,9 @@ void main() {
           SearchService.instance.parseResultsForTesting('Entities', html);
       expect(results.length, equals(1));
       expect(
-          results.first.title, equals('“Ubuntu” & Debian \'Server\' <v1.0>'),);
+        results.first.title,
+        equals('“Ubuntu” & Debian \'Server\' <v1.0>'),
+      );
     });
 
     test(
@@ -800,11 +848,14 @@ void main() {
       for (var i = 0; i < 500; i++) {
         buffer.write('<tr><td><a class="detLink">Adversarial Title $i</a>');
         buffer.write(
-            '<div><span><span><span>depth</span></span></span></div>' * 10,);
+          '<div><span><span><span>depth</span></span></span></div>' * 10,
+        );
         buffer.write(
-            '</td><td><a href="magnet:?xt=urn:btih:8888888888888888888888888888888888888888&dn=Title+$i">DL</a></td>',);
+          '</td><td><a href="magnet:?xt=urn:btih:8888888888888888888888888888888888888888&dn=Title+$i">DL</a></td>',
+        );
         buffer.write(
-            '<td>500 MB</td><td class="seeds">10</td><td class="leech">2</td></tr>',);
+          '<td>500 MB</td><td class="seeds">10</td><td class="leech">2</td></tr>',
+        );
       }
       buffer.write('</table>');
 
@@ -815,9 +866,11 @@ void main() {
       stopwatch.stop();
 
       expect(results.length, equals(500));
-      expect(stopwatch.elapsedMilliseconds, lessThan(1000),
-          reason:
-              'Parsing 500 rows must finish in under 1 second without ReDoS',);
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(1000),
+        reason: 'Parsing 500 rows must finish in under 1 second without ReDoS',
+      );
     });
   });
 
@@ -865,8 +918,10 @@ void main() {
         file: zeroPieceSizeTorrent.files.first,
       );
       // Sequential download mode was requested, but piece boost aborted safely
-      expect(mockEngine.callLog,
-          contains('setTorrentSequentialDownload(301, true)'),);
+      expect(
+        mockEngine.callLog,
+        contains('setTorrentSequentialDownload(301, true)'),
+      );
       expect(zeroPieceSizeTorrent.filePriorityCalls, isEmpty);
 
       // 2. beginPiece < 0
@@ -984,7 +1039,9 @@ void main() {
       );
 
       expect(
-          MoovPriorityBooster.activeSessionsForTest.containsKey(304), isFalse,);
+        MoovPriorityBooster.activeSessionsForTest.containsKey(304),
+        isFalse,
+      );
     });
 
     test(

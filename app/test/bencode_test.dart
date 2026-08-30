@@ -7,24 +7,54 @@ import 'package:gravity_torrent/utils/bencode.dart';
 void main() {
   group('Bencode - Integer Encoding & Decoding', () {
     test('encodes and decodes standard integers', () {
-      expect(Bencode.encode(0), equals(Uint8List.fromList(ascii.encode('i0e'))));
-      expect(Bencode.encode(42), equals(Uint8List.fromList(ascii.encode('i42e'))));
-      expect(Bencode.encode(-42), equals(Uint8List.fromList(ascii.encode('i-42e'))));
+      expect(
+        Bencode.encode(0),
+        equals(Uint8List.fromList(ascii.encode('i0e'))),
+      );
+      expect(
+        Bencode.encode(42),
+        equals(Uint8List.fromList(ascii.encode('i42e'))),
+      );
+      expect(
+        Bencode.encode(-42),
+        equals(Uint8List.fromList(ascii.encode('i-42e'))),
+      );
 
-      expect(Bencode.decode(Uint8List.fromList(ascii.encode('i0e'))), equals(0));
-      expect(Bencode.decode(Uint8List.fromList(ascii.encode('i42e'))), equals(42));
-      expect(Bencode.decode(Uint8List.fromList(ascii.encode('i-42e'))), equals(-42));
+      expect(
+        Bencode.decode(Uint8List.fromList(ascii.encode('i0e'))),
+        equals(0),
+      );
+      expect(
+        Bencode.decode(Uint8List.fromList(ascii.encode('i42e'))),
+        equals(42),
+      );
+      expect(
+        Bencode.decode(Uint8List.fromList(ascii.encode('i-42e'))),
+        equals(-42),
+      );
     });
 
     test('supports 64-bit signed integer limits', () {
       const maxInt = 9223372036854775807;
       const minInt = -9223372036854775808;
 
-      expect(Bencode.encode(maxInt), equals(Uint8List.fromList(ascii.encode('i${maxInt}e'))));
-      expect(Bencode.encode(minInt), equals(Uint8List.fromList(ascii.encode('i${minInt}e'))));
+      expect(
+        Bencode.encode(maxInt),
+        equals(Uint8List.fromList(ascii.encode('i${maxInt}e'))),
+      );
+      expect(
+        Bencode.encode(minInt),
+        equals(Uint8List.fromList(ascii.encode('i${minInt}e'))),
+      );
 
-      expect(Bencode.decode(Uint8List.fromList(ascii.encode('i${maxInt}e'))), equals(maxInt));
-      expect(Bencode.decode(Uint8List.fromList(ascii.encode('i${minInt}e'))), equals(minInt));
+      expect(
+        Bencode.decode(Uint8List.fromList(ascii.encode('i${maxInt}e'))),
+        equals(maxInt),
+      );
+      expect(
+        Bencode.decode(Uint8List.fromList(ascii.encode('i${minInt}e'))),
+        equals(minInt),
+      );
     });
 
     test('rejects negative zero per BEP 0003', () {
@@ -86,7 +116,8 @@ void main() {
         expect(
           () => Bencode.decode(Uint8List.fromList(ascii.encode(c))),
           throwsA(isA<FormatException>()),
-          reason: 'Payload "$c" containing whitespace must throw FormatException',
+          reason:
+              'Payload "$c" containing whitespace must throw FormatException',
         );
       }
     });
@@ -110,7 +141,8 @@ void main() {
     });
 
     test('encodes multi-byte UTF-8 strings accurately with byte count', () {
-      const text = 'hello 🌍'; // 'hello ' = 6 bytes, '🌍' = 4 bytes (0xF0 0x9F 0x8C 0x8D) -> total 10 bytes
+      const text =
+          'hello 🌍'; // 'hello ' = 6 bytes, '🌍' = 4 bytes (0xF0 0x9F 0x8C 0x8D) -> total 10 bytes
       final encoded = Bencode.encode(text);
       final expectedHeader = ascii.encode('10:');
       expect(encoded.sublist(0, 3), equals(expectedHeader));
@@ -152,7 +184,8 @@ void main() {
       );
     });
 
-    test('rejects huge and 64-bit integer overflow byte string lengths safely', () {
+    test('rejects huge and 64-bit integer overflow byte string lengths safely',
+        () {
       final hugeLengthCases = [
         '9223372036854775807:abc',
         '9223372036854775806:abc',
@@ -163,7 +196,8 @@ void main() {
         expect(
           () => Bencode.decode(Uint8List.fromList(ascii.encode(c))),
           throwsA(isA<FormatException>()),
-          reason: 'Huge string length "$c" must throw FormatException instead of crashing',
+          reason:
+              'Huge string length "$c" must throw FormatException instead of crashing',
         );
       }
     });
@@ -194,7 +228,10 @@ void main() {
       final decoded = Bencode.decode(encoded) as List<dynamic>;
       expect(decoded.length, equals(1));
       expect(decoded[0], isA<List<dynamic>>());
-      expect((decoded[0] as List)[0], equals(Uint8List.fromList(utf8.encode('nested'))));
+      expect(
+        (decoded[0] as List)[0],
+        equals(Uint8List.fromList(utf8.encode('nested'))),
+      );
     });
 
     test('rejects unterminated lists', () {
@@ -219,14 +256,18 @@ void main() {
         'spam': 'eggs',
       };
       final encoded = Bencode.encode(dict);
-      expect(encoded, equals(Uint8List.fromList(ascii.encode('d3:cow3:moo4:spam4:eggse'))));
+      expect(
+        encoded,
+        equals(Uint8List.fromList(ascii.encode('d3:cow3:moo4:spam4:eggse'))),
+      );
       final decoded = Bencode.decode(encoded) as Map<String, dynamic>;
       expect(decoded.keys.toList(), equals(['cow', 'spam']));
       expect(decoded['cow'], equals(Uint8List.fromList(utf8.encode('moo'))));
       expect(decoded['spam'], equals(Uint8List.fromList(utf8.encode('eggs'))));
     });
 
-    test('sorts dictionary keys in unsigned lexicographical UTF-8 byte order', () {
+    test('sorts dictionary keys in unsigned lexicographical UTF-8 byte order',
+        () {
       final dict = {
         'z': 1,
         'aa': 2,
@@ -240,7 +281,9 @@ void main() {
       );
     });
 
-    test('properly orders UTF-8 bytes vs UTF-16 code units (BEP 0003 compliance)', () {
+    test(
+        'properly orders UTF-8 bytes vs UTF-16 code units (BEP 0003 compliance)',
+        () {
       // '\uE000' is Private Use Area (UTF-8: 0xEE 0x80 0x80)
       // '\u{1F600}' is Grinning Face emoji (UTF-8: 0xF0 0x9F 0x98 0x80)
       // In UTF-16: '\u{1F600}' (0xD83D 0xDE00) < '\uE000' (0xE000)
@@ -298,7 +341,8 @@ void main() {
   });
 
   group('Bencode - Deep Nesting & Security Limits', () {
-    test('enforces maxDepth recursion limit and prevents StackOverflowError', () {
+    test('enforces maxDepth recursion limit and prevents StackOverflowError',
+        () {
       final buffer = StringBuffer();
       for (int i = 0; i < 600; i++) {
         buffer.write('l');
@@ -373,7 +417,8 @@ void main() {
   });
 
   group('Bencode - decodeTorrent & TorrentMetadata', () {
-    test('decodes single-file torrent metainfo and computes SHA-1 infoHash', () {
+    test('decodes single-file torrent metainfo and computes SHA-1 infoHash',
+        () {
       final dummyPieces = Uint8List(60); // 3 pieces (3 * 20 bytes)
       for (int i = 0; i < 60; i++) {
         dummyPieces[i] = i % 256;
@@ -408,13 +453,27 @@ void main() {
       expect(metadata.announce, equals('http://tracker.example.com/announce'));
       expect(metadata.comment, equals('Test Torrent Comment'));
       expect(metadata.createdBy, equals('Gravity Test Suite'));
-      expect(metadata.creationDate, equals(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000, isUtc: true)));
+      expect(
+        metadata.creationDate,
+        equals(
+          DateTime.fromMillisecondsSinceEpoch(
+            1700000000 * 1000,
+            isUtc: true,
+          ),
+        ),
+      );
 
       // Validate InfoHash SHA-1 calculation
       final expectedInfoBytes = Bencode.encode(infoDict);
       final expectedDigest = sha1.convert(expectedInfoBytes);
-      expect(metadata.infoHash, equals(Uint8List.fromList(expectedDigest.bytes)));
-      expect(metadata.infoHashHex, equals(expectedDigest.toString().toLowerCase()));
+      expect(
+        metadata.infoHash,
+        equals(Uint8List.fromList(expectedDigest.bytes)),
+      );
+      expect(
+        metadata.infoHashHex,
+        equals(expectedDigest.toString().toLowerCase()),
+      );
 
       // Validate Piece Hash access
       final piece0 = metadata.getPieceHash(0);
@@ -451,7 +510,10 @@ void main() {
       final rootDict = <String, dynamic>{
         'announce': 'http://tracker1.com/announce',
         'announce-list': [
-          ['http://tracker1.com/announce', 'http://tracker1-backup.com/announce'],
+          [
+            'http://tracker1.com/announce',
+            'http://tracker1-backup.com/announce',
+          ],
           ['udp://tracker2.com:1337/announce'],
         ],
         'info': infoDict,
@@ -472,8 +534,17 @@ void main() {
       expect(metadata.files[2].length, equals(2000));
 
       expect(metadata.announceList.length, equals(2));
-      expect(metadata.announceList[0], equals(['http://tracker1.com/announce', 'http://tracker1-backup.com/announce']));
-      expect(metadata.announceList[1], equals(['udp://tracker2.com:1337/announce']));
+      expect(
+        metadata.announceList[0],
+        equals([
+          'http://tracker1.com/announce',
+          'http://tracker1-backup.com/announce',
+        ]),
+      );
+      expect(
+        metadata.announceList[1],
+        equals(['udp://tracker2.com:1337/announce']),
+      );
     });
 
     test('throws FormatException on malformed torrent structures', () {
@@ -521,7 +592,9 @@ void main() {
       );
     });
 
-    test('throws FormatException on byte string path or invalid path list in multi-file torrent', () {
+    test(
+        'throws FormatException on byte string path or invalid path list in multi-file torrent',
+        () {
       // files is a byte string
       expect(
         () => Bencode.decodeTorrent(

@@ -303,8 +303,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       expect(
-        mockEngine.callLog
-            .where((c) => c.startsWith('setTorrentSpeedLimit')),
+        mockEngine.callLog.where((c) => c.startsWith('setTorrentSpeedLimit')),
         isEmpty,
       );
     });

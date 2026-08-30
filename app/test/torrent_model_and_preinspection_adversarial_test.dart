@@ -169,14 +169,23 @@ void main() {
           'pieceCount': neg,
           'pieces': base64Encode(Uint8List.fromList([0xFF, 0xFF])),
         });
-        expect(model.pieceCount, equals(0), reason: 'pieceCount $neg should clamp to 0');
-        expect(model.pieces, isEmpty, reason: 'pieces for count $neg should be empty');
+        expect(
+          model.pieceCount,
+          equals(0),
+          reason: 'pieceCount $neg should clamp to 0',
+        );
+        expect(
+          model.pieces,
+          isEmpty,
+          reason: 'pieces for count $neg should be empty',
+        );
       }
     });
 
     test('Null, missing, and non-integer pieceCount types', () {
       // Null
-      final mNull = TransmissionTorrentModel.fromJson({'id': 111, 'pieceCount': null});
+      final mNull =
+          TransmissionTorrentModel.fromJson({'id': 111, 'pieceCount': null});
       expect(mNull.pieceCount, equals(0));
       expect(mNull.pieces, isEmpty);
 
@@ -186,13 +195,16 @@ void main() {
       expect(mMissing.pieces, isEmpty);
 
       // Double
-      final mDouble = TransmissionTorrentModel.fromJson({'id': 114, 'pieceCount': 50.7});
+      final mDouble =
+          TransmissionTorrentModel.fromJson({'id': 114, 'pieceCount': 50.7});
       expect(mDouble.pieceCount, equals(50));
       expect(mDouble.pieces.length, equals(50));
 
       // String triggers TypeError on strict cast (standard Dart JSON model pattern)
       expect(
-        () => TransmissionTorrentModel.fromJson({'id': 113, 'pieceCount': 'invalid'}),
+        () => TransmissionTorrentModel.fromJson(
+          {'id': 113, 'pieceCount': 'invalid'},
+        ),
         throwsA(isA<TypeError>()),
       );
     });
@@ -333,8 +345,16 @@ void main() {
       });
       final torrent = createTransmissionTorrentFromJson(model);
 
-      expect(torrent.hasLoadedPieces([]), isTrue, reason: 'Empty query on empty torrent is vacuum true');
-      expect(torrent.hasLoadedPieces([0]), isFalse, reason: 'Index 0 is out of bounds on empty torrent');
+      expect(
+        torrent.hasLoadedPieces([]),
+        isTrue,
+        reason: 'Empty query on empty torrent is vacuum true',
+      );
+      expect(
+        torrent.hasLoadedPieces([0]),
+        isFalse,
+        reason: 'Index 0 is out of bounds on empty torrent',
+      );
       expect(torrent.hasLoadedPieces([-1]), isFalse);
       expect(torrent.hasLoadedPieces([100]), isFalse);
     });
@@ -352,7 +372,11 @@ void main() {
       expect(torrentLoaded.hasLoadedPieces([0]), isTrue);
       expect(torrentLoaded.hasLoadedPieces([0, 0]), isTrue);
       // Boundary out-of-range checks
-      expect(torrentLoaded.hasLoadedPieces([1]), isFalse, reason: 'Index 1 == pieceCount is out of bounds');
+      expect(
+        torrentLoaded.hasLoadedPieces([1]),
+        isFalse,
+        reason: 'Index 1 == pieceCount is out of bounds',
+      );
       expect(torrentLoaded.hasLoadedPieces([2]), isFalse);
       expect(torrentLoaded.hasLoadedPieces([-1]), isFalse);
       expect(torrentLoaded.hasLoadedPieces([0, 1]), isFalse);
@@ -396,7 +420,11 @@ void main() {
       expect(torrent.hasLoadedPieces([999997]), isFalse);
 
       // Out of bounds boundaries
-      expect(torrent.hasLoadedPieces([1000000]), isFalse, reason: 'Index 1000000 == pieceCount');
+      expect(
+        torrent.hasLoadedPieces([1000000]),
+        isFalse,
+        reason: 'Index 1000000 == pieceCount',
+      );
       expect(torrent.hasLoadedPieces([1000001]), isFalse);
       expect(torrent.hasLoadedPieces([1000100]), isFalse);
       expect(torrent.hasLoadedPieces([5000000]), isFalse);
@@ -422,8 +450,16 @@ void main() {
       });
       final torrent = createTransmissionTorrentFromJson(model);
 
-      expect(torrent.hasLoadedPieces([1000000]), isTrue, reason: 'Last piece is index 1000000');
-      expect(torrent.hasLoadedPieces([1000001]), isFalse, reason: 'Index 1000001 == pieceCount');
+      expect(
+        torrent.hasLoadedPieces([1000000]),
+        isTrue,
+        reason: 'Last piece is index 1000000',
+      );
+      expect(
+        torrent.hasLoadedPieces([1000001]),
+        isFalse,
+        reason: 'Index 1000001 == pieceCount',
+      );
       expect(torrent.hasLoadedPieces([1000002]), isFalse);
     });
 
@@ -479,10 +515,22 @@ void main() {
           'piece length': 16384,
           'pieces': Uint8List(20),
           'files': [
-            {'length': 0, 'path': ['.gitkeep']},
-            {'length': 0, 'path': ['empty_dir', 'placeholder.touch']},
-            {'length': 5000, 'path': ['src', 'main.dart']},
-            {'length': 0, 'path': ['docs', 'TODO.txt']},
+            {
+              'length': 0,
+              'path': ['.gitkeep'],
+            },
+            {
+              'length': 0,
+              'path': ['empty_dir', 'placeholder.touch'],
+            },
+            {
+              'length': 5000,
+              'path': ['src', 'main.dart'],
+            },
+            {
+              'length': 0,
+              'path': ['docs', 'TODO.txt'],
+            },
           ],
         },
       };
@@ -512,8 +560,14 @@ void main() {
           'piece length': 16384,
           'pieces': Uint8List(20),
           'files': [
-            {'length': 0, 'path': ['empty1.txt']},
-            {'length': 0, 'path': ['empty2.txt']},
+            {
+              'length': 0,
+              'path': ['empty1.txt'],
+            },
+            {
+              'length': 0,
+              'path': ['empty2.txt'],
+            },
           ],
         },
       };
@@ -558,7 +612,10 @@ void main() {
       expect(metadata.files.length, equals(fileCount));
       expect(metadata.totalSize, equals(expectedTotalSize));
       expect(metadata.files[0].path, equals('folder_0/subfolder_0/file_0.dat'));
-      expect(metadata.files[4999].path, equals('folder_49/subfolder_499/file_4999.dat'));
+      expect(
+        metadata.files[4999].path,
+        equals('folder_49/subfolder_499/file_4999.dat'),
+      );
     });
 
     test('terabyte-scale single-file and multi-file torrent calculations', () {
@@ -652,21 +709,24 @@ void main() {
       expect(
         checkLowStorageTrigger(predictedSize - 1, predictedSize),
         isTrue,
-        reason: 'freeSpace strictly 1 byte less than predictedSize must trigger warning',
+        reason:
+            'freeSpace strictly 1 byte less than predictedSize must trigger warning',
       );
 
       // 2. freeSpace = predictedSize -> MUST NOT TRIGGER (exact fit)
       expect(
         checkLowStorageTrigger(predictedSize, predictedSize),
         isFalse,
-        reason: 'freeSpace exactly equal to predictedSize should not trigger warning',
+        reason:
+            'freeSpace exactly equal to predictedSize should not trigger warning',
       );
 
       // 3. freeSpace = predictedSize + 1 -> MUST NOT TRIGGER
       expect(
         checkLowStorageTrigger(predictedSize + 1, predictedSize),
         isFalse,
-        reason: 'freeSpace 1 byte greater than predictedSize should not trigger warning',
+        reason:
+            'freeSpace 1 byte greater than predictedSize should not trigger warning',
       );
 
       // 4. freeSpace = 0 -> MUST NOT TRIGGER (unmeasured or permission denied)
