@@ -6,45 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:gravity_torrent/engine/engine.dart';
 import 'package:gravity_torrent/services/service_locator.dart';
-
-/// Bencode encoder (minimal, self-contained).
-class _Bencode {
-  static Uint8List encode(Object value) {
-    final buffer = BytesBuilder();
-    _encode(value, buffer);
-    return buffer.toBytes();
-  }
-
-  static void _encode(Object value, BytesBuilder b) {
-    if (value is int) {
-      b.add('i${value}e'.codeUnits);
-    } else if (value is String) {
-      final bytes = utf8.encode(value);
-      b.add('${bytes.length}:'.codeUnits);
-      b.add(bytes);
-    } else if (value is Uint8List) {
-      b.add('${value.length}:'.codeUnits);
-      b.add(value);
-    } else if (value is List) {
-      b.addByte(0x6C); // 'l'
-      for (final item in value) {
-        _encode(item as Object, b);
-      }
-      b.addByte(0x65); // 'e'
-    } else if (value is Map) {
-      b.addByte(0x64); // 'd'
-      final sorted = value.entries.toList()
-        ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
-      for (final entry in sorted) {
-        _encode(entry.key.toString(), b);
-        _encode(entry.value as Object, b);
-      }
-      b.addByte(0x65); // 'e'
-    } else {
-      throw ArgumentError('Unsupported type: ${value.runtimeType}');
-    }
-  }
-}
+import 'package:gravity_torrent/utils/bencode.dart';
 
 class TorrentCreatorProgress {
   final int filesProcessed;
@@ -68,6 +30,32 @@ class TorrentCreatorProgress {
 
 class TorrentCreatorService {
   TorrentCreatorService._();
+
+  /// Parses multiline tracker text into BEP 12 tracker tiers.
+  ///
+  /// Consecutive non-empty lines belong to the same tier.
+  /// Blank lines separate distinct tiers.
+  static List<List<String>> parseTrackerTiers(String text) {
+    final tiers = <List<String>>[];
+    var currentTier = <String>[];
+
+    final lines = text.split(RegExp(r'\r?\n'));
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      if (line.isEmpty) {
+        if (currentTier.isNotEmpty) {
+          tiers.add(currentTier);
+          currentTier = <String>[];
+        }
+      } else {
+        currentTier.add(line);
+      }
+    }
+    if (currentTier.isNotEmpty) {
+      tiers.add(currentTier);
+    }
+    return tiers;
+  }
 
   /// Creates a `.torrent` file from [inputPath] (file or directory).
   ///
@@ -230,7 +218,7 @@ class TorrentCreatorService {
     torrent['created by'] = createdBy ?? 'Gravity Torrent';
 
     // Encode and write
-    final encoded = _Bencode.encode(torrent);
+    final encoded = Bencode.encode(torrent);
     final outputName = '${p.basenameWithoutExtension(baseName)}.torrent';
     final outputPath = p.join(outputDirectory, outputName);
 

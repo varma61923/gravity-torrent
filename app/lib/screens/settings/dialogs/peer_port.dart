@@ -24,7 +24,9 @@ class _PeerPortDialogState extends State<PeerPortDialog> {
   void initState() {
     super.initState();
     peerPort = TextEditingController.fromValue(
-      TextEditingValue(text: widget.currentValue.toString()),
+      TextEditingValue(
+        text: widget.currentValue > 0 ? widget.currentValue.toString() : '51413',
+      ),
     );
   }
 
@@ -37,7 +39,7 @@ class _PeerPortDialogState extends State<PeerPortDialog> {
   void handleSave() {
     if (_formKey.currentState?.validate() != true) return;
     final val = int.tryParse(peerPort.text);
-    if (val == null) return;
+    if (val == null || val < 1 || val > 65535) return;
     Navigator.of(context).pop();
     widget.onSave(val);
   }
@@ -61,7 +63,8 @@ class _PeerPortDialogState extends State<PeerPortDialog> {
                 if (value == null || value.isEmpty) {
                   return localizations.emptyNumber;
                 }
-                if (int.tryParse(value) == null) {
+                final port = int.tryParse(value);
+                if (port == null || port < 1 || port > 65535) {
                   return localizations.invalidNumber;
                 }
                 return null; // Return null if the input is valid

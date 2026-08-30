@@ -15,6 +15,7 @@ import 'package:gravity_torrent/services/recent_download_directories_service.dar
 import 'package:gravity_torrent/utils/app_links.dart';
 import 'package:provider/provider.dart';
 import 'package:gravity_torrent/services/ads/ad_service_provider.dart';
+import 'package:gravity_torrent/utils/bencode.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AddTorrentDialog extends StatefulWidget {
@@ -74,6 +75,9 @@ class _AddTorrentDialogState extends State<AddTorrentDialog> {
   Future<void> _handleAddTorrent() async {
     try {
       String? metainfo;
+      Uint8List? rawBytes;
+      TorrentMetadata? parsedMetadata;
+
       if (_filename != null) {
         // From a .torrent file
         if (_filename!.startsWith('content:')) {
@@ -81,14 +85,21 @@ class _AddTorrentDialogState extends State<AddTorrentDialog> {
           final Content content = await ContentResolver.resolveContent(
             _filename!,
           );
-          metainfo = base64Encode(content.data);
+          rawBytes = content.data;
         } else {
           final file = File(_filename!);
-          final content = await file.readAsBytes();
-          metainfo = base64Encode(content);
+          rawBytes = await file.readAsBytes();
         }
 
-        if (metainfo.isEmpty) {
+        if (rawBytes.isEmpty) {
+          throw TorrentAddError();
+        }
+
+        metainfo = base64Encode(rawBytes);
+
+        try {
+          parsedMetadata = Bencode.decodeTorrent(rawBytes);
+        } catch (e) {
           throw TorrentAddError();
         }
       }
@@ -174,39 +185,16 @@ class _AddTorrentDialogState extends State<AddTorrentDialog> {
         }
       }
 
-      // Content size of a torrent is encoded inside the bencoded metadata and
-      // cannot be derived from the base64 metainfo length. The previous
-      // `metainfo.length * 1000` heuristic both over- and under-estimated
-      // wildly and produced false low-storage warnings. When adding from a
-      // .torrent file we have no reliable size until the torrent is added;
-      // for magnet links the size is unknown as well. Skip the free-space
-      // check when the size cannot be determined reliably; the engine will
-      // surface disk-full errors if they occur.
+      // Compute exact predicted size from parsed .torrent metadata
       int predictedSize = 0;
-      if (metainfo == null) {
-        // Magnet link with no size info — do not guess; treat as unknown.
-        predictedSize = 0;
-      } else {
-        // From .torrent file: attempt to use the file's own size as a very
-        // rough lower bound, but do not multiply the base64 length.
-        try {
-          if (_filename != null && !_filename!.startsWith('content:')) {
-            final f = File(_filename!);
-            if (f.existsSync()) {
-              // Real content is typically larger than the .torrent file itself,
-              // but the .torrent size at least avoids a wild 500 MiB guess.
-              predictedSize = 0;
-            }
-          }
-        } catch (_) {
-          predictedSize = 0;
-        }
+      if (parsedMetadata != null) {
+        predictedSize = parsedMetadata.totalSize;
       }
 
       if (!mounted) return;
       final localizations = AppLocalizations.of(context);
 
-      if (freeSpace > 0 && freeSpace < predictedSize) {
+      if (freeSpace > 0 && predictedSize > 0 && freeSpace < predictedSize) {
         final proceed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(

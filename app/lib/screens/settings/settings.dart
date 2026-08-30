@@ -293,7 +293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
     }
-    _updateSession(
+    await _updateSession(
       SessionBase(blocklistUrl: trimmed, blocklistEnabled: trimmed.isNotEmpty),
     );
   }

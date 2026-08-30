@@ -35,6 +35,17 @@ class BlocklistService {
   DateTime? get lastUpdated => _lastUpdated;
   int get rulesCount => _rulesCount;
 
+  @visibleForTesting
+  void resetForTest() {
+    _enabled = false;
+    _loaded = false;
+    _updating = false;
+    _url = defaultUrl;
+    _lastUpdated = null;
+    _rulesCount = 0;
+    _updateCompleter = null;
+  }
+
   /// Validates that [url] is a safe HTTP/HTTPS URL. Empty string is allowed
   /// and represents "no blocklist URL / disabled".
   static Future<bool> isValidBlocklistUrl(
