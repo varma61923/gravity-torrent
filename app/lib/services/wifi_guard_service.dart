@@ -41,6 +41,11 @@ class WifiGuardService {
   /// The last known list of local IP addresses, used to detect interface changes.
   List<String> _lastIpAddresses = [];
 
+  /// When true in VPN kill-switch mode, torrents were paused due to an IP
+  /// change and must not auto-resume when the same (exposed) IP is seen again.
+  /// Cleared only by an explicit user action ([setMode]/[setEnabled]).
+  bool _vpnKillTripped = false;
+
   bool _disposed = false;
   Future<void>? _lock;
 
@@ -73,6 +78,7 @@ class WifiGuardService {
     } else {
       _unsubscribe();
       await _resumeAll();
+      _vpnKillTripped = false;
     }
   }
 
@@ -90,6 +96,7 @@ class WifiGuardService {
     if (_disposed) return;
     // Re-seed the IP snapshot when switching modes.
     _lastIpAddresses = await _currentIpAddresses();
+    _vpnKillTripped = false;
     _pausedByGuard.clear();
   }
 
@@ -98,6 +105,7 @@ class WifiGuardService {
     // Start with an empty IP snapshot. The first connectivity event will seed
     // the baseline inside the lock, avoiding a race with the listener.
     _lastIpAddresses = [];
+    _vpnKillTripped = false;
     _connectivitySub = Connectivity().onConnectivityChanged.listen(
           _onConnectivityChanged,
         );
@@ -145,19 +153,27 @@ class WifiGuardService {
         final currentIps = await _currentIpAddresses();
         final changed = !_ipListsEqual(_lastIpAddresses, currentIps);
         if (changed && _lastIpAddresses.isNotEmpty) {
-          // Interface change detected.
+          // Interface change detected — trip the kill switch.
           if (kDebugMode) {
             debugPrint(
               'WifiGuardService: interface change detected '
               '$_lastIpAddresses -> $currentIps',
             );
           }
+          _vpnKillTripped = true;
           await _pauseAll();
         } else if (_lastIpAddresses.isEmpty && currentIps.isNotEmpty) {
-          // Network restored after a full disconnect — resume.
-          await _resumeAll();
+          // Network restored after a full disconnect — resume only if the
+          // kill switch has not been tripped.
+          if (!_vpnKillTripped) {
+            await _resumeAll();
+          }
         } else if (!changed && _lastIpAddresses.isNotEmpty) {
-          await _resumeAll();
+          // Same IPs as before — do NOT auto-resume if kill switch was
+          // tripped, otherwise the exposed IP would resume traffic.
+          if (!_vpnKillTripped) {
+            await _resumeAll();
+          }
         }
         _lastIpAddresses = currentIps;
       }

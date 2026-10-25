@@ -65,6 +65,24 @@ class SeedRatioService {
   /// Returns true if a goal is set for [torrentId].
   bool hasGoal(int torrentId) => _goals.containsKey(torrentId.toString());
 
+  @visibleForTesting
+  void resetForTest() {
+    _goals.clear();
+    _loaded = false;
+  }
+
+  /// Calculates seed ratio according to BitTorrent convention:
+  /// uses [downloadedEver] if > 0, otherwise falls back to [size] if > 0, else 0.0.
+  static double calculateRatio(Torrent torrent) {
+    if (torrent.downloadedEver > 0) {
+      return torrent.uploadedEver / torrent.downloadedEver;
+    }
+    if (torrent.size > 0) {
+      return torrent.uploadedEver / torrent.size;
+    }
+    return 0.0;
+  }
+
   /// Checks all [torrents] against their goals and pauses those that have
   /// exceeded their ratio. Called by [TorrentsModel] after each fetch.
   Future<void> checkAndStop(
@@ -81,13 +99,8 @@ class SeedRatioService {
         final goal = _goals[torrent.id.toString()];
         if (goal == null) continue;
         if (torrent.status != TorrentStatus.seeding) continue;
-        final denominator = torrent.size;
 
-        if (denominator <= 0) {
-          continue; // Avoid division by zero if size is also 0
-        }
-
-        final ratio = torrent.uploadedEver / denominator;
+        final ratio = calculateRatio(torrent);
         if (ratio >= goal) {
           try {
             await engine.pauseTorrent(torrent.id);

@@ -14,8 +14,25 @@ class AutoExtractService extends ChangeNotifier {
   static final AutoExtractService instance = AutoExtractService._();
 
   AutoExtractService._() {
+    // SharedPrefs.init() happens in main() before the first frame; reading
+    // synchronously here would miss the persisted value if this singleton is
+    // accessed before init. Load asynchronously and patch the defaults once
+    // storage is ready.
     _autoExtractEnabled = SharedPrefs.getBool(_keyEnabled) ?? false;
     _destinationFolder = SharedPrefs.getString(_keyDestination) ?? '';
+    unawaited(_loadAsync());
+  }
+
+  Future<void> _loadAsync() async {
+    // SharedPrefsStorage helpers are async and safe before init (they await
+    // the SharedPreferences instance internally). Use them as a fallback.
+    try {
+      final enabled = await SharedPrefsStorage.getBool(_keyEnabled);
+      if (enabled != null) _autoExtractEnabled = enabled;
+      final dest = await SharedPrefsStorage.getString(_keyDestination);
+      if (dest != null) _destinationFolder = dest;
+      _safeNotify();
+    } catch (_) {}
   }
 
   bool _autoExtractEnabled = false;

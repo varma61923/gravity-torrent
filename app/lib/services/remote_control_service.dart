@@ -156,8 +156,9 @@ class RemoteControlService {
     await loadSettings();
     await loadApiKeys();
     _starting = true;
+    String? generatedToken;
     try {
-      _token = _generateToken();
+      generatedToken = _generateToken();
       final ip = await _localIp();
       if (_disposed || !_starting) return;
       // Bind to the private/local address. If no private address is available,
@@ -167,7 +168,15 @@ class RemoteControlService {
       _server = await shelf_io.serve(_handler, bindAddress, port, shared: true);
       _port = _server!.port;
       _localAddress = 'http://${formatHostForUrl(ip)}:$_port';
+      _token = generatedToken;
       _qrPayload = jsonEncode({'url': _localAddress, 'token': _token});
+    } catch (e) {
+      // Bind failed — do not leave a stale token/qrPayload for a non-running server.
+      _token = '';
+      _qrPayload = '';
+      _localAddress = '';
+      _port = 0;
+      rethrow;
     } finally {
       _starting = false;
     }
@@ -549,10 +558,12 @@ class RemoteControlService {
   /// Iterates over the full length so that an attacker cannot learn the
   /// secret token's length from a short-circuiting comparison.
   bool _constantTimeCompare(String a, String b) {
-    if (a.length != b.length) return false;
-    var result = 0;
-    for (var i = 0; i < a.length; i++) {
-      result |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    var result = a.length ^ b.length;
+    final maxLen = a.length > b.length ? a.length : b.length;
+    for (var i = 0; i < maxLen; i++) {
+      final ca = i < a.length ? a.codeUnitAt(i) : 0;
+      final cb = i < b.length ? b.codeUnitAt(i) : 0;
+      result |= ca ^ cb;
     }
     return result == 0;
   }

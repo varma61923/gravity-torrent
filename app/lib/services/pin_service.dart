@@ -247,10 +247,15 @@ class PinService {
   }
 
   bool _constantTimeCompare(String a, String b) {
-    if (a.length != b.length) return false;
-    var result = 0;
-    for (var i = 0; i < a.length; i++) {
-      result |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    // Constant-time even when lengths differ so the caller cannot learn the
+    // secret length via a fast-path. Tokens and hashes are fixed-length in
+    // practice, but we still avoid the early-return timing leak.
+    var result = a.length ^ b.length;
+    final maxLen = a.length > b.length ? a.length : b.length;
+    for (var i = 0; i < maxLen; i++) {
+      final ca = i < a.length ? a.codeUnitAt(i) : 0;
+      final cb = i < b.length ? b.codeUnitAt(i) : 0;
+      result |= ca ^ cb;
     }
     return result == 0;
   }

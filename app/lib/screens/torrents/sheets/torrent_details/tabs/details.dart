@@ -99,9 +99,7 @@ class _DetailsTabState extends State<DetailsTab> {
     final localizations = AppLocalizations.of(context);
     final torrent = widget.torrent;
 
-    double ratio = torrent.downloadedEver > 0
-        ? (torrent.uploadedEver / torrent.downloadedEver)
-        : 0;
+    double ratio = SeedRatioService.calculateRatio(torrent);
     // Clamp and format to a readable two-decimal value.
     ratio = ratio.clamp(0.0, double.infinity);
 

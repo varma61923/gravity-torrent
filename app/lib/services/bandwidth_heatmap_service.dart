@@ -126,7 +126,8 @@ class BandwidthHeatmapService extends ChangeNotifier {
       if (_disposed) return;
 
       if (currentLimit == -1) {
-        // -1 means pause all active torrents.
+        // -1 means pause all active torrents. Do not touch alt-speed while
+        // paused; resume is handled when leaving the -1 slot.
         final torrents = await engine.fetchTorrents();
         if (_disposed) return;
         final activeIds = torrents
@@ -141,14 +142,20 @@ class BandwidthHeatmapService extends ChangeNotifier {
           await engine.pauseTorrents(activeIds);
           _pausedByHeatmap.addAll(activeIds);
         }
-        // Resume any torrents previously paused by the heatmap.
+      } else {
+        // Leaving/entering a non-pause slot: resume anything the heatmap
+        // paused, respecting quota throttling.
         if (_pausedByHeatmap.isNotEmpty) {
           final isQuotaEnforced = getIt.isRegistered<TorrentsModel>() &&
               getIt<TorrentsModel>().isQuotaPauseEnforced;
           if (!isQuotaEnforced) {
-            await engine.resumeTorrents(_pausedByHeatmap.toList());
+            try {
+              await engine.resumeTorrents(_pausedByHeatmap.toList());
+              _pausedByHeatmap.clear();
+            } catch (_) {
+              // Keep _pausedByHeatmap for retry on next tick.
+            }
           }
-          _pausedByHeatmap.clear();
         }
 
         final session = await engine.fetchSession();
@@ -159,7 +166,7 @@ class BandwidthHeatmapService extends ChangeNotifier {
           // If BatteryService is currently throttling, it controls alt-speed
           // independently; we defer to it and skip the update here.
           await session.update(SessionBase(altSpeedEnabled: false));
-        } else {
+        } else if (currentLimit > 0) {
           // specific limit
           await session.update(
             SessionBase(

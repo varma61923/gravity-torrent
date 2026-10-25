@@ -317,6 +317,21 @@ class RssService {
     if (_disposed || response == null || response.statusCode != 200) return;
 
     final body = response.body;
+    // Guard against XML-bomb / huge feeds that could OOM on parse.
+    if (body.length > 512 * 1024) {
+      if (kDebugMode) {
+        debugPrint('RssService: feed too large, skipping $feedUrl');
+      }
+      return;
+    }
+    if (body.contains('<!ENTITY') || body.contains('<!DOCTYPE')) {
+      if (kDebugMode) {
+        debugPrint(
+          'RssService: feed contains ENTITY/DOCTYPE, skipping $feedUrl',
+        );
+      }
+      return;
+    }
 
     try {
       final document = XmlDocument.parse(body);
@@ -361,7 +376,22 @@ class RssService {
         ..maxRedirects = 0;
       final streamed =
           await client.send(request).timeout(const Duration(seconds: 15));
+      // Early reject if the server declares a huge body (before buffering).
+      final contentLength =
+          int.tryParse(streamed.headers['content-length'] ?? '');
+      if (contentLength != null && contentLength > 512 * 1024) {
+        if (kDebugMode) {
+          debugPrint(
+            'RssService: content-length $contentLength exceeds limit for $url',
+          );
+        }
+        return null;
+      }
       final response = await http.Response.fromStream(streamed);
+      if (response.bodyBytes.length > 512 * 1024) {
+        if (kDebugMode) debugPrint('RssService: body too large for $url');
+        return null;
+      }
 
       if (response.statusCode >= 300 && response.statusCode < 400) {
         if (redirectCount >= maxRedirects) return null;

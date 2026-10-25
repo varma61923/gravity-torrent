@@ -65,12 +65,8 @@ class _CreateTorrentDialogState extends State<CreateTorrentDialog> {
     final inputPath = _inputPath!;
     final outputDirectory = _outputDirectory!;
 
-    final trackers = _trackersController.text
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .map((line) => [line])
-        .toList();
+    final trackers =
+        TorrentCreatorService.parseTrackerTiers(_trackersController.text);
 
     setState(() {
       _creating = true;

@@ -121,9 +121,12 @@ class _FilesTabState extends State<FilesTab> {
 
     final files = widget.torrent.files;
 
-    final displayedFiles = _showOnlyPlayable
-        ? files.where((f) => _isFilePlayable(f.name)).toList()
-        : files;
+    // Preserve the original index through filtering so the wanted-toggle RPC
+    // targets the correct file even when the filtered subset is shown and
+    // `File` instances are rebuilt on every 5s poll.
+    final displayedWithIndex = _showOnlyPlayable
+        ? files.indexed.where((e) => _isFilePlayable(e.$2.name)).toList()
+        : files.indexed.toList();
 
     final bool areAllFilesWanted = files.every((f) => f.wanted);
     final bool areAllFilesSkipped = files.none((f) => f.wanted);
@@ -174,9 +177,10 @@ class _FilesTabState extends State<FilesTab> {
           ),
         Expanded(
           child: ListView.builder(
-            itemCount: displayedFiles.length,
+            itemCount: displayedWithIndex.length,
             itemBuilder: (context, index) {
-              final file = displayedFiles[index];
+              final file = displayedWithIndex[index].$2;
+              final originalIndex = displayedWithIndex[index].$1;
 
               final percent = file.length > 0
                   ? (file.bytesCompleted / file.length * 100).floor()
@@ -185,9 +189,6 @@ class _FilesTabState extends State<FilesTab> {
               final completed = file.bytesCompleted == file.length;
 
               final bool isPlayable = _isFilePlayable(file.name);
-
-              // Get the original index in the full files list
-              final originalIndex = files.indexOf(file);
 
               return ListTile(
                 leading: Icon(getFileIcon(file.name)),

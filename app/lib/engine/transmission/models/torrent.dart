@@ -184,10 +184,8 @@ class TransmissionTorrentModel {
         eta = (json['eta'] as num?)?.toInt() ?? -1,
         pieces = (() {
           final raw = json['pieces'];
-          final count = ((json['pieceCount'] as num?)?.toInt() ?? 0).clamp(
-            0,
-            1000000,
-          );
+          final rawCount = (json['pieceCount'] as num?)?.toInt() ?? 0;
+          final count = rawCount < 0 ? 0 : rawCount;
           if (raw == null || raw.toString().isEmpty || count == 0) {
             return List<bool>.filled(count, false);
           }
@@ -203,10 +201,10 @@ class TransmissionTorrentModel {
             return List<bool>.filled(count, false);
           }
         })(),
-        pieceCount = ((json['pieceCount'] as num?)?.toInt() ?? 0).clamp(
-          0,
-          1000000,
-        ),
+        pieceCount = (() {
+          final rawCount = (json['pieceCount'] as num?)?.toInt() ?? 0;
+          return rawCount < 0 ? 0 : rawCount;
+        })(),
         pieceSize = (json['pieceSize'] as num?)?.toInt() ?? 0,
         errorString = json['errorString'] as String? ?? '',
         location = json['downloadDir'] as String? ?? '',
